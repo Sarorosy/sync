@@ -85,7 +85,17 @@ const CommentBox = ({ users, taskId }) => {
             getSuggestions: (type, text, done) => {
                 setTimeout(() => {
                     if (type === "mention") {
-                        done(users);
+                        const filteredUsers = text 
+                            ? users.filter(u => u.name.toLowerCase().includes(text.toLowerCase())) 
+                            : users;
+
+                        const mappedUsers = filteredUsers.map(user => ({
+                            name: user.name,
+                            id:user.id,
+                            email: user.email,
+                            profile_pic: user.profile_pic || user.name.charAt(0).toUpperCase()
+                        }));
+                        done(mappedUsers);
                     } else if (type === "tag") {
                         done([{ tag: "number" }, { tag: "month_name" }]);
                     }

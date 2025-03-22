@@ -21,6 +21,7 @@ import { io } from "socket.io-client";
 import { debounce } from "lodash";
 import CommentBox from "./CommentBox";
 import CommentsandLogs from "./views/CommentsandLogs";
+import { useAuth } from "../../context/AuthContext";
 
 
 const socket = io("http://localhost:5000");
@@ -37,6 +38,7 @@ function ViewTask({ selectedTask, onClose, users }) {
         due_time: selectedTask.due_time,
         created_by: 1, // Replace with logged-in user ID
     });
+    const user = useAuth();
 
     useEffect(() => {
         if (selectedTask) {
@@ -135,10 +137,10 @@ function ViewTask({ selectedTask, onClose, users }) {
                 },
                 onChange: async () => {
                     const content = await editorInstance.current.save();
-                        const jsonData = JSON.stringify(content);
-                        setTask((prev) => ({ ...prev, description: jsonData }));
-                        updateTaskDescription(jsonData);
-                        console.log(jsonData);
+                    const jsonData = JSON.stringify(content);
+                    setTask((prev) => ({ ...prev, description: jsonData }));
+                    updateTaskDescription(jsonData);
+                    console.log(jsonData);
                 },
             });
         }
@@ -183,8 +185,8 @@ function ViewTask({ selectedTask, onClose, users }) {
     };
 
     const updateTaskTitle = debounce((updatedTitle) => {
-        socket.emit("update_task_title", { taskId: selectedTask.id, title: updatedTitle });
-    }, 500); 
+        socket.emit("update_task_title", { taskId: selectedTask.id, title: updatedTitle, user_id: user.user.id });
+    }, 500);
 
     useEffect(() => {
         socket.on("task_updated", (data) => {
@@ -201,7 +203,7 @@ function ViewTask({ selectedTask, onClose, users }) {
 
     const updateTaskDescription = useCallback(
         debounce((updatedDescription) => {
-            socket.emit("update_task_description", { taskId: selectedTask.id, description: updatedDescription });
+            socket.emit("update_task_description", { taskId: selectedTask.id, description: updatedDescription, user_id: user.user.id });
         }, 500),
         [selectedTask.id] // Ensures debounce is stable
     );
@@ -224,8 +226,8 @@ function ViewTask({ selectedTask, onClose, users }) {
             style={{ overflowY: "scroll", height: "90vh" }}
             className="max-w-5xl bg-gray-50 shadow-md  ml-1 border-l-1 w-2xl scrollbar-none"
         >
-            <div className="sticky top-0 bg-white border-b-2 w-full h-12 flex justify-between px-3 items-center z-50">
-                {showTitle && <h2 className="pl-2 text-gray-500">{task.title}</h2>}
+            <div className="sticky top-0 bg-white border-b w-full h-12 flex justify-between px-3 items-center z-50">
+                {showTitle && <h2 className="pl-2 text-gray-700">{task.title}</h2>}
                 {!showTitle && <button className="px-3 py-1 text-sm border text-gray-400 rounded-md flex items-center hover:bg-green-200 hover:text-green-700"
 
                 >
