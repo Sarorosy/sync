@@ -1,0 +1,227 @@
+.cont-default{
+    width: 100%;
+    height: 100%;
+  
+    background: rgb(255, 255, 255);
+    --gap: 5em;
+    --line: 1px;
+    --color: rgba(0, 0, 0, 0.2);
+  
+    background-image: linear-gradient(
+        -90deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      );
+    background-size: var(--gap) var(--gap);
+  
+  
+}
+.cont-default-test{
+    background: rgb(255, 255, 255);
+}
+.cont-purple{
+    width: 100%;
+    height: 100%;
+  
+    background: rgb(173, 188, 255);
+    --gap: 5em;
+    --line: 1px;
+    --color: rgba(0, 0, 0, 0.2);
+  
+    background-image: linear-gradient(
+        -90deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      );
+    background-size: var(--gap) var(--gap);
+  
+  
+}
+.cont-purple-test{
+    background: rgb(173, 188, 255);
+}
+
+.cont-green{
+    width: 100%;
+    height: 100%;
+  
+    background: rgb(214, 255, 213);
+    --gap: 5em;
+    --line: 1px;
+    --color: rgba(0, 0, 0, 0.2);
+  
+    background-image: linear-gradient(
+        -90deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      );
+    background-size: var(--gap) var(--gap);
+  
+  
+}
+.cont-green-test{
+    background: rgb(214, 255, 213);
+}
+.cont-blue{
+    width: 100%;
+    height: 100%;
+  
+    background: rgb(146, 215, 255);
+    --gap: 5em;
+    --line: 1px;
+    --color: rgba(0, 0, 0, 0.2);
+  
+    background-image: linear-gradient(
+        -90deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      );
+    background-size: var(--gap) var(--gap);
+  
+  
+}
+.cont-blue-test{
+    background: rgb(146, 215, 255);
+}
+.cont-red{
+    width: 100%;
+    height: 100%;
+  
+    background: rgb(255, 174, 174);
+    --gap: 5em;
+    --line: 1px;
+    --color: rgba(0, 0, 0, 0.2);
+  
+    background-image: linear-gradient(
+        -90deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      );
+    background-size: var(--gap) var(--gap);
+  
+  
+}
+.cont-red-test{
+    background: rgb(255, 174, 174);
+}
+
+.cont-yellow{
+    width: 100%;
+    height: 100%;
+  
+    background: rgb(254, 255, 174);
+    --gap: 5em;
+    --line: 1px;
+    --color: rgba(0, 0, 0, 0.2);
+  
+    background-image: linear-gradient(
+        -90deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      );
+    background-size: var(--gap) var(--gap);
+  
+  
+}
+.cont-yellow-test{
+    background: rgb(254, 255, 174);
+}
+
+.cont-pink{
+    width: 100%;
+    height: 100%;
+  
+    background: rgb(239, 185, 255);
+    --gap: 5em;
+    --line: 1px;
+    --color: rgba(0, 0, 0, 0.2);
+  
+    background-image: linear-gradient(
+        -90deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      );
+    background-size: var(--gap) var(--gap);
+  
+  
+}
+.cont-pink-test{
+    background: rgb(239, 185, 255);
+}
+.cont-gray{
+    width: 100%;
+    height: 100%;
+  
+    background: rgb(233, 233, 233);
+    --gap: 5em;
+    --line: 1px;
+    --color: rgba(0, 0, 0, 0.2);
+  
+    background-image: linear-gradient(
+        -90deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(var(--gap) - var(--line)),
+        var(--color) calc(var(--gap) - var(--line) + 1px),
+        var(--color) var(--gap)
+      );
+    background-size: var(--gap) var(--gap);
+  
+  
+}
+.cont-gray-test{
+    background: rgb(233, 233, 233);
+}

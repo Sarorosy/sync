@@ -1,0 +1,113 @@
+.primary-bg{
+    background-color: #FF6200
+}
+.primary-bg:hover{
+    background-color: #e65800
+}
+.primary-color{
+    color: #FF6200
+}
+.primary-text-hover:hover{
+    color: #FF6200
+}
+.primary-border-bottom{
+    border-bottom: 1px solid #FF6200
+}
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .ProseMirror .tableWrapper {
+    overflow-x: auto;
+  }
+  .ProseMirror table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+    overflow: hidden;
+  }
+  .ProseMirror td,
+  .ProseMirror th {
+    vertical-align: top;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .ProseMirror .column-resize-handle {
+    position: absolute;
+    right: -2px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    z-index: 20;
+    background-color: #adf;
+    pointer-events: none;
+  }
+  .ProseMirror.resize-cursor {
+    cursor: ew-resize;
+    cursor: col-resize;
+  }
+  /* Give selected cells a blue overlay */
+  .ProseMirror .selectedCell:after {
+    z-index: 2;
+    position: absolute;
+    content: "";
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(200, 200, 255, 0.4);
+    pointer-events: none;
+  }
+  .prosemirror-mention-node  {
+    background: #edeae9;
+    padding: 3px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .suggestion-item {
+    padding: 5px;
+    cursor: pointer;
+    background-color: rgb(199, 233, 255);
+    margin: 3px 0;
+  }
+  .suggestion-item:hover{
+    background-color: #adf;
+  }
+  .suggestion-item-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    background-color: white ;
+    border-radius: 4px;
+  }
+  .ProseMirror {
+    height: 40px;
+    overflow-y: auto;
+    border: 1px solid transparent;
+    outline: none;
+    padding: 5px;
+    transition: height 0.3s ease-in-out;
+  }
+  .ProseMirror:focus {
+    height: 110px;
+  }
+  #editorjs{
+    height: 160px;
+    overflow-y: scroll;
+  }
+  .topmost{
+    z-index: 9999999999999;
+  }
+@font-face {
+    font-family: 'iOSFont';
+    src: url('./assets/ios.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    font-family: 'iOSFont', sans-serif;
+}

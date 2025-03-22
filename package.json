@@ -1,0 +1,91 @@
+{
+  "name": "chat",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@editorjs/checklist": "^1.6.0",
+    "@editorjs/delimiter": "^1.4.2",
+    "@editorjs/editorjs": "^2.30.8",
+    "@editorjs/embed": "^2.7.6",
+    "@editorjs/header": "^2.8.8",
+    "@editorjs/image": "^2.10.2",
+    "@editorjs/list": "^2.0.6",
+    "@editorjs/paragraph": "^2.11.7",
+    "@editorjs/quote": "^2.7.6",
+    "@lexical/html": "^0.27.2",
+    "@lexical/react": "^0.27.2",
+    "@lexical/rich-text": "^0.27.2",
+    "@lexical/utils": "^0.27.2",
+    "axios": "^1.7.9",
+    "cra-template": "1.2.0",
+    "date-fns": "^2.29.3",
+    "emoji-picker-react": "^4.12.2",
+    "firebase": "^11.5.0",
+    "flatpickr": "^4.6.13",
+    "framer-motion": "^12.5.0",
+    "html-react-parser": "^5.2.2",
+    "idb-keyval": "^6.2.1",
+    "jquery": "^3.7.1",
+    "lexical": "^0.27.2",
+    "lucide-react": "^0.482.0",
+    "prosemirror-commands": "^1.7.0",
+    "prosemirror-example-setup": "^1.2.3",
+    "prosemirror-history": "^1.4.1",
+    "prosemirror-image-plugin": "^2.10.0",
+    "prosemirror-inputrules": "^1.5.0",
+    "prosemirror-keymap": "^1.2.2",
+    "prosemirror-mentions": "^1.0.2",
+    "prosemirror-model": "^1.25.0",
+    "prosemirror-schema-basic": "^1.2.4",
+    "prosemirror-state": "^1.4.3",
+    "prosemirror-suggest": "^3.0.0",
+    "prosemirror-tables": "^1.6.4",
+    "prosemirror-view": "^1.38.1",
+    "quill": "^2.0.3",
+    "quill-mention": "^6.0.2",
+    "react": "^19.0.0",
+    "react-datepicker": "^8.2.1",
+    "react-dom": "^19.0.0",
+    "react-flatpickr": "^3.10.13",
+    "react-hot-toast": "^2.5.2",
+    "react-mentions": "^4.4.10",
+    "react-router-dom": "^7.1.1",
+    "react-scripts": "5.0.1",
+    "react-select": "^5.10.1",
+    "react-tooltip": "^5.28.0",
+    "select2": "^4.1.0-rc.0",
+    "slate": "^0.112.0",
+    "slate-react": "^0.112.1",
+    "socket.io-client": "^4.8.1",
+    "web-vitals": "^4.2.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17"
+  }
+}

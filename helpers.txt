@@ -1,0 +1,3 @@
+data-tooltip-id="my-tooltip"
+data-tooltip-content="Customize theme"
+data-tooltip-place="right"
