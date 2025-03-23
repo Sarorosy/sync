@@ -18,6 +18,7 @@ import { messaging } from './firebase-config';
 import { onMessage } from 'firebase/messaging';
 import toast from "react-hot-toast";
 import SplashScreen from "./components/SplashScreen";
+import Profile from "./pages/user/Profile";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -141,7 +142,7 @@ function App() {
             id: user.id,
             email: user.email,
             name: user.name,
-            avatar: user.profile_pic || "", // Assuming `profile_pic` contains the image URL
+            avatar: user.profile_pic ? "http://localhost:5000" + user.profile_pic : "", // Assuming `profile_pic` contains the image URL
           }));
           setUsers(userOptions);
         } else {
@@ -175,6 +176,7 @@ function App() {
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/tasks" element={<Tasks users={users} />} />
+              <Route path="/profile" element={<Profile users={users} />} />
             </Route>
           </Routes>
         </Router>

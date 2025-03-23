@@ -3,6 +3,7 @@ import axios from "axios";
 import parse from "html-react-parser";
 import { io } from "socket.io-client";
 import { domToReact } from "html-react-parser";
+import { format } from "timeago.js";
 
 const CommentsandLogs = ({ taskId }) => {
     const [comments, setComments] = useState([]);
@@ -58,11 +59,11 @@ const CommentsandLogs = ({ taskId }) => {
                     const mentionName = domNode.attribs["data-mention-name"];
                     const mentionEmail = domNode.attribs["data-mention-email"];
 
-                    if (mentionName && mentionEmail) {
+                    if (mentionName) {
                         return (
                             <span className="inline-flex justify-start items-center text-xs bg-gray-300 font-semibold rounded-md">
                                 <span className="mentionname text-black">{mentionName.charAt(0)}</span>
-                                <span className="pl-1 mentionemail text-black">{mentionEmail}</span>
+                                <span className="pl-1 mentionemail text-black">{mentionName}</span>
                             </span>
                         );
                     }
@@ -74,7 +75,7 @@ const CommentsandLogs = ({ taskId }) => {
     const logsOnly = comments.filter((comment) => comment.islog === 1);
 
     return (
-        <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-4">
+        <div className="max-w-3xl mt-2 mx-auto bg-white shadow-lg rounded-lg p-4">
             {/* Tabs */}
             <div className="flex border-b border-black mb-2">
                 <button
@@ -105,7 +106,7 @@ const CommentsandLogs = ({ taskId }) => {
                                         <div key={comment.id} className="p-3 text-gray-500 bg-gray-50 rounded-lg shadow-sm mx-auto tex-xs">
                                             <strong className="text-gray-800 text-sm">{comment.user_name.charAt(0).toUpperCase() + comment.user_name.slice(1)}</strong>{" "}
                                             <span className="text-gray-600 text-sm">{parse(comment.comment)}</span>{" "}
-                                            <span className="text-xs text-gray-400">({new Date(comment.created_at).toLocaleString()})</span>
+                                            <span className="text-xs text-gray-400">({format(new Date(comment.created_at))})</span>
                                         </div>
                                     );
                                 } else {
@@ -117,14 +118,14 @@ const CommentsandLogs = ({ taskId }) => {
                                             <div className="flex items-center space-x-3 mb-2">
                                                 <div className={`w-8 h-8 ${getRandomColor(comment.user_id)} rounded-full flex items-center justify-center overflow-hidden`}>
                                                     {comment.profile_pic ? (
-                                                        <img src={comment.profile_pic} alt={comment.user_name} className="w-full h-full object-cover" />
+                                                        <img src={"http://localhost:5000" +comment.profile_pic} alt={comment.user_name} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <span className={`  font-semibold text-sm`}>{comment.user_name[0]}</span>
                                                     )}
                                                 </div>
                                                 <div>
                                                     <strong className="text-gray-900 text-sm">{comment.user_name}</strong>
-                                                    <p className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString()}</p>
+                                                    <p className="text-xs text-gray-500">{format(new Date(comment.created_at))}</p>
                                                 </div>
                                             </div>
 
@@ -154,7 +155,7 @@ const CommentsandLogs = ({ taskId }) => {
                                 <div key={comment.id} className="p-3 text-gray-500 bg-gray-50 rounded-lg shadow-sm mx-auto text-xs">
                                     <strong className="text-gray-800 ">{comment.user_name.charAt(0).toUpperCase() + comment.user_name.slice(1)}</strong>{" "}
                                     <span className="text-gray-600 ">{parse(comment.comment)}</span>{" "}
-                                    <span className="text-xs text-gray-400 ">({new Date(comment.created_at).toLocaleString()})</span>
+                                    <span className="text-xs text-gray-400 ">({format(new Date(comment.created_at))})</span>
                                 </div>
                             ))
                         )}

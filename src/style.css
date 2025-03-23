@@ -115,6 +115,23 @@
   .topmost{
     z-index: 9999999999999;
   }
+
+  .ql-toolbar{
+    background: rgb(204, 209, 255);
+    border:0px solid transparent;
+    border:none !important;
+}
+  .ql-editor{
+    min-height: 150px;
+    margin-top: 0px;
+    border:0px solid transparent;
+    border: none;
+  }
+  .ql-container{
+    margin-top: 0px !important;
+    border:0px;
+    border: none !important;
+  }
 @font-face {
     font-family: 'iOSFont';
     src: url('./assets/ios.ttf') format('truetype');

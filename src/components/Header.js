@@ -6,12 +6,14 @@ import { AnimatePresence } from "framer-motion";
 import AddTask from "../pages/task/AddTask";
 import toast from "react-hot-toast";
 import { Search, CheckCircle, Folder, Flag, MoreHorizontal } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Header = ({ toggleExpand, isExpanded }) => {
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const navigate = useNavigate()
 
 
   const [query, setQuery] = useState("");
@@ -179,7 +181,9 @@ const Header = ({ toggleExpand, isExpanded }) => {
           className="flex items-center gap-2px-4 px-1 py-0.5 rounded-full border transition"
           onClick={() => setDropdownOpen(!dropdownOpen)}
         >
-          <CircleUserRound className="font-light text-gray-400" />
+          {(user && user.profile_pic) ? 
+          <img className="w-8 h-8 rounded-full" src={"http://localhost:5000"+ user.profile_pic} /> : <CircleUserRound className="font-light text-gray-400" />
+        }
           <span className="ml-1">{user?.name.charAt(0).toUpperCase() + user?.name.slice(1)}</span>
           <ChevronDown size={18} />
         </button>
@@ -188,7 +192,7 @@ const Header = ({ toggleExpand, isExpanded }) => {
         {dropdownOpen && (
           <div className="topmost absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg p-2">
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() =>navigate('/profile') }
               className="w-full text-left px-4 py-1 text-gray-500 flex items-center gap-2 hover:bg-gray-100 rounded-lg"
             >
               <User size={24} className="border p-1 rounded-full" /> Profile

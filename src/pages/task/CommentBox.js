@@ -67,7 +67,6 @@ const CommentBox = ({ users, taskId }) => {
                 }
             }
         };
-
         let schema = new Schema({
             nodes: updateImageNode(
                 baseSchema.spec.nodes
@@ -86,22 +85,57 @@ const CommentBox = ({ users, taskId }) => {
                 setTimeout(() => {
                     if (type === "mention") {
                         const filteredUsers = text 
-                            ? users.filter(u => u.name.toLowerCase().includes(text.toLowerCase())) 
-                            : users;
+                            ? (Array.isArray(users) ? users.filter(u => u.name.toLowerCase().includes(text.toLowerCase())) : [])
+                            : (Array.isArray(users) ? users : []);
 
                         const mappedUsers = filteredUsers.map(user => ({
                             name: user.name,
                             id:user.id,
                             email: user.email,
-                            profile_pic: user.profile_pic || user.name.charAt(0).toUpperCase()
+                            profile_pic:  user.profile_pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`
                         }));
+
                         done(mappedUsers);
+
                     } else if (type === "tag") {
                         done([{ tag: "number" }, { tag: "month_name" }]);
                     }
                 }, 0);
             },
+            onEnter: (item, setEditorState) => {
+                console.log("coming inside")
+                setEditorState((prevState) => {
+                    let { selection } = prevState;
+                    let mentionText = `@${item.name} `;
+            
+                    // Insert mention text at cursor position
+                    let tr = prevState.tr.insertText(mentionText, selection.anchor);
+            
+                    // ✅ Move cursor forward after inserted mention
+                    let newSelection = TextSelection.create(
+                        tr.doc, 
+                        selection.anchor + mentionText.length
+                    );
+                    tr = tr.setSelection(newSelection);
+            
+                    console.log("Updated Transaction:", tr);
+                    return prevState.apply(tr);
+                });
+            
+                // ✅ Ensure ProseMirror editor refocuses and inserts space
+                setTimeout(() => {
+                    const editorNode = document.querySelector(".ProseMirror");
+                    if (editorNode) {
+                        editorNode.focus();
+                        document.execCommand("insertText", false, " "); // Ensure space after mention
+                    }
+                }, 50);
+            },
+            
+            
+            
         });
+        
 
         let menu = buildMenuItems(schema).fullMenu;
         menu.push([new MenuItem({ label: "Add table", run: insertTable })]);
@@ -126,12 +160,29 @@ const CommentBox = ({ users, taskId }) => {
 
         editorViewRef.current = new EditorView(editorRef.current, { state }); // Store the editor instance
 
+        const handleClickOutside = (event) => {
+            const mentionDropdown = document.querySelector(".suggestion-item-container");
+            if (mentionDropdown && !editorRef.current.contains(event.target)) {
+                mentionDropdown.remove();
+            }
+        };
+    
+        document.addEventListener("click", handleClickOutside);
+
         return () => {
-            editorViewRef.current?.destroy(); // Cleanup on unmount
-            editorViewRef.current = null;
+            if (editorViewRef.current) {
+                editorViewRef.current.destroy();
+                editorViewRef.current = null;
+            }
+    
+            // **Remove mention suggestion dropdown**
+            const mentionDropdown = document.querySelector(".mention-suggestions");
+            if (mentionDropdown) mentionDropdown.remove();
         };
     }, []);
 
+    
+    
     const insertTable = (state, dispatch) => {
         const offset = state.tr.selection.anchor + 1;
         const cell = state.schema.nodes.table_cell.createAndFill();
@@ -224,11 +275,7 @@ const CommentBox = ({ users, taskId }) => {
     return (
         <div className="sticky bottom-0 p-4 bg-white shadow-md z-50 border bordert-t-1">
             <div ref={editorRef} className="border border-gray-300 bg-white p-2 rounded-md shadow-sm"></div>
-            {selectedUser && (
-                <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-md">
-                    Selected User: {selectedUser}
-                </div>
-            )}
+            
             <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-4 p-2 bg-white rounded-lg ">
                     {/* Emoji Picker */}

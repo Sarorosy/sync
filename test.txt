@@ -4,14 +4,24 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Select from "react-select";
 import { Calendar, CircleX, Clock, UserCircle, UserRound } from "lucide-react";
+import DatePicker from "react-datepicker";
+import EditorJS from "@editorjs/editorjs";
+import Header from "@editorjs/header";
+import List from "@editorjs/list";
+import Paragraph from "@editorjs/paragraph";
+import Embed from "@editorjs/embed";
+import ImageTool from "@editorjs/image";
+import Quote from "@editorjs/quote";
+import Delimiter from "@editorjs/delimiter";
+import Checklist from "@editorjs/checklist";
 import "react-datepicker/dist/react-datepicker.css";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import { useAuth } from "../../context/AuthContext";
-import Quill from "quill";
+
 
 function AddTask({ onTaskAdded, onClose, users }) {
-    const { user } = useAuth();
+    const {user} = useAuth();
     const [task, setTask] = useState({
         title: "",
         description: "",
@@ -21,56 +31,72 @@ function AddTask({ onTaskAdded, onClose, users }) {
         priority: "medium",
         due_date: "",
         due_time: "",
-        created_by: user?.id, // Replace with logged-in user ID
+        created_by: user?.id , // Replace with logged-in user ID
     });
     const [search, setSearch] = useState("");
     const [showDropdown, setShowDropdown] = useState(false);
 
-    useEffect(() => {
-        if (!document.querySelector("#editor .ql-toolbar")) {
-            const quill = new Quill("#editor", {
-                theme: "snow",
-                modules: {
-                    toolbar: [
-                        [{ 'header': [1, 2, false] }],
-                        ['bold', 'italic', 'underline'],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                        ['clean']
-                    ]
-                }
-            });
 
-            quill.on("text-change", () => {
-                handleDescriptionChange(quill.root.innerHTML); // Get HTML content
-            });
-
-            const editor = document.querySelector(".ql-editor");
-            const toolbar = document.querySelector(".ql-toolbar");
-
-            toolbar.style.opacity = "0";
-
-            editor.addEventListener("focus", () => {
-                toolbar.style.opacity = "1";
-            });
-
-            editor.addEventListener("blur", () => {
-                setTimeout(() => {
-                    toolbar.style.opacity = "0";
-                }, 200);
-            });
-        }
-    }, []);
-
+    
     const filteredUsers = users.filter(user =>
         user.label.toLowerCase().includes(search.toLowerCase())
     );
-    const handleDescriptionChange = (value) => {
-        setTask((prev) => ({ ...prev, description: value }));
-    };
 
+    
 
+    const editorInstance = useRef(null);
 
+    useEffect(() => {
+        if (!editorInstance.current) {
+            editorInstance.current = new EditorJS({
+                holder: "editorjs",
+                placeholder: "Write task description...",
+                tools: {
+                    paragraph: Paragraph,
+                    header: {
+                        class: Header,
+                        inlineToolbar: true,
+                    },
+                    list: {
+                        class: List,
+                        inlineToolbar: true,
+                    },
+                    checklist: {
+                        class: Checklist,
+                        inlineToolbar: true,
+                    },
+                    quote: {
+                        class: Quote,
+                        inlineToolbar: true,
+                    },
+                    delimiter: Delimiter,
+                    embed: Embed,
+                    image: {
+                        class: ImageTool,
+                        config: {
+                            endpoints: {
+                                byFile: "http://localhost:5000/api/tasks/upload-image", // Correct backend API for image uploads
+                                byUrl: "http://localhost:5000/api/tasks/fetch-image", // Optional: Change this to a valid image-fetching API if needed
+                            },
+                            field: "image", // Ensure this matches the key in the FormData backend expects
+                            types: "image/*", // Restrict file types to images
+                        },
+                    },
+                },
+                onChange: async () => {
+                    const content = await editorInstance.current.save();
+                    setTask((prev) => ({ ...prev, description: content }));
+                },
+            });
+        }
+
+        return () => {
+            if (editorInstance.current && typeof editorInstance.current.destroy === "function") {
+                editorInstance.current.destroy();
+                editorInstance.current = null;
+            }
+        };
+    }, []);
 
     const dateRef = useRef(null);
     const timeRef = useRef(null);
@@ -128,6 +154,7 @@ function AddTask({ onTaskAdded, onClose, users }) {
                     due_time: "",
                     created_by: 1,
                 });
+                editorInstance.current.clear();
             }
         } catch (error) {
             //  toast.error("Failed to add task.");
@@ -271,11 +298,10 @@ function AddTask({ onTaskAdded, onClose, users }) {
                         </div></div>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column-reverse" }} className="border rounded-md">
-                    <div id="editor" style={{ border: "none", background: "white" }}>
-
-                    </div>
+                <div className="bg-white">
+                    <div id="editorjs" className="border rounded px-3 py-2 mt-1"></div>
                 </div>
+
                 <button
                     type="submit"
                     className="w-48 bg-black text-white py-2 rounded"

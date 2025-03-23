@@ -97,7 +97,7 @@ const ListView = ({ tasks, handleViewTask, detailsOpen }) => {
                   <td className="px-6 py-1 flex items-center">
                     {task.assigned_user_profile ? (
                       <img
-                        src={task.assigned_user_profile}
+                        src={"http://localhost:5000" + task.assigned_user_profile}
                         alt={task.assigned_user_name}
                         className="w-8 h-8 rounded-full border border-gray-300"
                       />

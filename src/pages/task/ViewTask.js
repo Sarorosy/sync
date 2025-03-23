@@ -4,16 +4,6 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Select from "react-select";
 import { ArrowRight, Calendar, CircleCheck, CircleX, Clock, Link, MoreHorizontal, UserCircle, UserRound } from "lucide-react";
-import DatePicker from "react-datepicker";
-import EditorJS from "@editorjs/editorjs";
-import Header from "@editorjs/header";
-import List from "@editorjs/list";
-import Paragraph from "@editorjs/paragraph";
-import Embed from "@editorjs/embed";
-import ImageTool from "@editorjs/image";
-import Quote from "@editorjs/quote";
-import Delimiter from "@editorjs/delimiter";
-import Checklist from "@editorjs/checklist";
 import "react-datepicker/dist/react-datepicker.css";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
@@ -22,6 +12,8 @@ import { debounce } from "lodash";
 import CommentBox from "./CommentBox";
 import CommentsandLogs from "./views/CommentsandLogs";
 import { useAuth } from "../../context/AuthContext";
+import Quill from "quill";
+import CryptoJS from "crypto-js";
 
 
 const socket = io("http://localhost:5000");
@@ -29,7 +21,7 @@ const socket = io("http://localhost:5000");
 function ViewTask({ selectedTask, onClose, users }) {
     const [task, setTask] = useState({
         title: selectedTask.title,
-        description: JSON.parse(selectedTask.description).data,
+        description: selectedTask.description,
         assigned_to: selectedTask.assigned_to,
         followers: "",
         status: selectedTask.status,
@@ -44,7 +36,7 @@ function ViewTask({ selectedTask, onClose, users }) {
         if (selectedTask) {
             setTask({
                 title: selectedTask.title,
-                description: JSON.parse(selectedTask.description).data,
+                description: selectedTask.description,
                 assigned_to: selectedTask.assigned_to,
                 followers: "",
                 status: selectedTask.status,
@@ -66,6 +58,23 @@ function ViewTask({ selectedTask, onClose, users }) {
         medium: "bg-yellow-500",
         high: "bg-orange-500",
         urgent: "bg-red-500",
+    };
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        if (!selectedTask?.id) return;
+    
+        // Generate SHA-1 hash using crypto-js
+        const encryptedId = CryptoJS.SHA1(selectedTask.id.toString()).toString().substring(0, 6);
+    
+        const taskLink = `http://localhost:3000/task/${encryptedId}`; // Generate link
+    
+        navigator.clipboard.writeText(taskLink)
+            .then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000); // Reset copied state after 2 sec
+            })
+            .catch(err => console.error("Failed to copy:", err));
     };
 
     useEffect(() => {
@@ -94,64 +103,47 @@ function ViewTask({ selectedTask, onClose, users }) {
             }
         };
     }, []);
+
+    useEffect(() => {
+        if (!document.querySelector("#editor .ql-toolbar") && document.querySelector("#editor")) {
+            const quill = new Quill("#editor", {
+                theme: "snow",
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, false] }],
+                        ['bold', 'italic', 'underline'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        ['clean']
+                    ]
+                }
+            });
+    
+            quill.on("text-change", () => {
+                handleDescriptionChange(quill.root.innerHTML); // Get HTML content
+            });
+    
+            quill.root.innerHTML = selectedTask.description || ""; // Set description
+    
+            const editor = document.querySelector(".ql-editor");
+            const toolbar = document.querySelector(".ql-toolbar");
+    
+            toolbar.style.opacity = "0";
+            editor.addEventListener("focus", () => { toolbar.style.opacity = "1"; });
+            editor.addEventListener("blur", () => { setTimeout(() => { toolbar.style.opacity = "0"; }, 200); });
+        }
+    }, [selectedTask]);  // Dependency ensures re-initialization when `selectedTask` changes
+    
+    const handleDescriptionChange = (value) => {
+        setTask(prev => ({ ...prev, description: value }));
+        updateTaskDescription(value);
+    };
+    
+
     const filteredUsers = users.filter(user =>
         user.label.toLowerCase().includes(search.toLowerCase())
     );
 
-    const editorInstance = useRef(null);
-
-    useEffect(() => {
-        if (!editorInstance.current) {
-            editorInstance.current = new EditorJS({
-                holder: "editorjs",
-                placeholder: "Write task description...",
-                tools: {
-                    paragraph: Paragraph,
-                    header: { class: Header, inlineToolbar: true },
-                    list: { class: List, inlineToolbar: true },
-                    checklist: { class: Checklist, inlineToolbar: true },
-                    quote: { class: Quote, inlineToolbar: true },
-                    delimiter: Delimiter,
-                    embed: Embed,
-                    image: {
-                        class: ImageTool,
-                        config: {
-                            endpoints: {
-                                byFile: "http://localhost:5000/api/tasks/upload-image",
-                                byUrl: "http://localhost:5000/api/tasks/fetch-image",
-                            },
-                            field: "image",
-                            types: "image/*",
-                        },
-                    },
-                },
-                onReady: () => {
-                    if (selectedTask.description) {
-                        try {
-                            const savedData = JSON.parse(selectedTask.description);
-                            editorInstance.current.render(savedData);
-                        } catch (error) {
-                            console.error("Error parsing description:", error);
-                        }
-                    }
-                },
-                onChange: async () => {
-                    const content = await editorInstance.current.save();
-                    const jsonData = JSON.stringify(content);
-                    setTask((prev) => ({ ...prev, description: jsonData }));
-                    updateTaskDescription(jsonData);
-                    console.log(jsonData);
-                },
-            });
-        }
-
-        return () => {
-            if (editorInstance.current && typeof editorInstance.current.destroy === "function") {
-                editorInstance.current.destroy();
-                editorInstance.current = null;
-            }
-        };
-    }, [selectedTask]); // Ensure it updates when selectedTask changes
 
 
     const dateRef = useRef(null);
@@ -243,10 +235,11 @@ function ViewTask({ selectedTask, onClose, users }) {
                         <MoreHorizontal size={24} className="cursor-pointer " />
                     </button>
                     <button
-                        data-tooltip-id="my-tooltip"
-                        data-tooltip-content="Copy Task Link"
-                        data-tooltip-place="top"
-                        className="text-gray-600 mr-2">
+                         onClick={handleCopy}
+                         data-tooltip-id="my-tooltip"
+                         data-tooltip-content={copied ? "Copied!" : "Copy Task Link"}
+                         data-tooltip-place="top"
+                         className="text-gray-600 mr-2">
                         <Link size={20} className="cursor-pointer " />
                     </button>
                     <ArrowRight size={30} className=" text-gray-600 cursor-pointer border border-transparent hover:border-gray-400 duration-300 rounded-full p-1" onClick={onClose} />
@@ -323,8 +316,10 @@ function ViewTask({ selectedTask, onClose, users }) {
                         </div></div>
                 </div>
 
-                <div className="bg-white z-49">
-                    <div id="editorjs" className="border rounded px-3 py-2 mt-1 scrollbar-none" ></div>
+                <div style={{ display: "flex", flexDirection: "column-reverse" }} className="border rounded-md">
+                    <div id="editor" style={{ border: "none", background: "white" }}>
+
+                    </div>
                 </div>
 
             </form>
