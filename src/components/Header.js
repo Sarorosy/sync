@@ -7,12 +7,17 @@ import AddTask from "../pages/task/AddTask";
 import toast from "react-hot-toast";
 import { Search, CheckCircle, Folder, Flag, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getToken } from 'firebase/messaging';
+import { messaging } from '../firebase-config';
+import { onMessage } from 'firebase/messaging';
+
 
 const Header = ({ toggleExpand, isExpanded }) => {
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState(false);
   const navigate = useNavigate()
 
 
@@ -51,6 +56,87 @@ const Header = ({ toggleExpand, isExpanded }) => {
     "Tasks I’ve assigned to others",
     "Recently completed tasks",
   ];
+
+  const requestPermission = async () => {
+    try {
+      // Check if notification permission is already granted
+      const permission = Notification.permission;
+
+      if (permission === 'granted') {
+        console.log('Notification permission already granted.');
+
+        // Register the service worker with the correct scope
+        if ('serviceWorker' in navigator) {
+          // Register the service worker manually with the correct path
+          const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+          console.log('Service Worker registered with scope:', registration.scope);
+
+          // Now, get the token with the custom service worker registration
+          const currentToken = await getToken(messaging, {
+            vapidKey: 'BFEh52B2gdCHFyKNo71vgG3Vg5crEdg2H4b2FLLjiAizybXHlwy73MQTUI0FVA9h1PH3Oy9dtc1wSJ6FVmj7MUE',  // Your VAPID key here
+            serviceWorkerRegistration: registration, // Pass the custom service worker registration
+          });
+
+          if (currentToken && user && user.id) {
+            console.log('FCM Token:', currentToken);
+            const requestData = {
+              user_id:user.id,
+              token: currentToken,
+            };
+
+            const response = await fetch("http://localhost:5000/api/saveFcmToken", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(requestData),
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              console.log("FCM token successfully saved:", result);
+            } else {
+              console.error("Failed to save FCM token:", response.status, response.statusText);
+            }
+
+          } else {
+            console.log('No registration token available.');
+          }
+        } else {
+          console.error('Service Workers are not supported in this browser.');
+        }
+      } else if (permission === 'default') {
+        // Request permission if not already granted
+        const permissionRequest = await Notification.requestPermission();
+        if (permissionRequest === 'granted') {
+          console.log('Notification permission granted.');
+          setPermissionGranted(true);
+          requestPermission();  // Re-run the permission request logic after granting
+        } else {
+          console.log('Notification permission denied.');
+        }
+      } else {
+        console.log('Notification permission denied.');
+      }
+
+    } catch (error) {
+      console.error('Error getting notification permission or token:', error);
+    }
+  };
+
+  useEffect(() => {
+
+    requestPermission();
+
+    onMessage(messaging, (payload) => {
+      console.log('Message received. ', payload.notification.body);  // Check this log to see the incoming message
+      if (payload && payload.notification) {
+        // Handle the notification payload data as needed
+        toast(payload.notification.body);
+        //alert(payload.data.google.c.a.c_l)
+      }
+    });
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {

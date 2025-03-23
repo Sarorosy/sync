@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Package, ChevronLeft, ChevronRight, LogOut, Store, BadgeCheck, Map, Bell, Users, Newspaper, Cannabis, MessageCircleQuestion, CheckCircle, CircleCheck } from "lucide-react";
+import { Home, Package, ChevronLeft, ChevronRight, LogOut, Store, BadgeCheck, Map, Bell, Users, Newspaper, Cannabis, MessageCircleQuestion, CheckCircle, CircleCheck, Users2 } from "lucide-react";
 import logo from '../assets/logo-black.svg';
 import { useAuth } from "../context/AuthContext";
 import ConfirmationModal from "./ConfirmationModal";
@@ -66,6 +66,11 @@ const Sidebar = ({isExpanded}) => {
         <li>
           <Link to="/tasks" className={`${isExpanded ? "pl-10" : "justify-center"} flex items-center gap-3 text-md p-2 rounded-lg primary-text-hover transition-all duration-200 `}>
             <CircleCheck size={18} /> {isExpanded && "My Tasks"}
+          </Link>
+        </li>
+        <li>
+          <Link to="/users" className={`${isExpanded ? "pl-10" : "justify-center"} flex items-center gap-3 text-md p-2 rounded-lg primary-text-hover transition-all duration-200 `}>
+            <Users2 size={18} /> {isExpanded && "Users"}
           </Link>
         </li>
         

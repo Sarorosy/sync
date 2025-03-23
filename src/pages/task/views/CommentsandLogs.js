@@ -75,7 +75,7 @@ const CommentsandLogs = ({ taskId }) => {
     const logsOnly = comments.filter((comment) => comment.islog === 1);
 
     return (
-        <div className="max-w-3xl mt-2 mx-auto bg-white shadow-lg rounded-lg p-4">
+        <div className="max-w-3xl my-3 mx-auto bg-white shadow-lg rounded-lg p-4">
             {/* Tabs */}
             <div className="flex border-b border-black mb-2">
                 <button
@@ -106,7 +106,11 @@ const CommentsandLogs = ({ taskId }) => {
                                         <div key={comment.id} className="p-3 text-gray-500 bg-gray-50 rounded-lg shadow-sm mx-auto tex-xs">
                                             <strong className="text-gray-800 text-sm">{comment.user_name.charAt(0).toUpperCase() + comment.user_name.slice(1)}</strong>{" "}
                                             <span className="text-gray-600 text-sm">{parse(comment.comment)}</span>{" "}
-                                            <span className="text-xs text-gray-400">({format(new Date(comment.created_at))})</span>
+                                            <span className="text-xs text-gray-400" 
+                                            data-tooltip-id="my-tooltip"
+                                            data-tooltip-content={new Date(comment.created_at)}
+                                            data-tooltip-place="top"
+                                            >({format(new Date(comment.created_at))})</span>
                                         </div>
                                     );
                                 } else {
@@ -125,7 +129,11 @@ const CommentsandLogs = ({ taskId }) => {
                                                 </div>
                                                 <div>
                                                     <strong className="text-gray-900 text-sm">{comment.user_name}</strong>
-                                                    <p className="text-xs text-gray-500">{format(new Date(comment.created_at))}</p>
+                                                    <p className="text-xs text-gray-500"
+                                                    data-tooltip-id="my-tooltip"
+                                                    data-tooltip-content={new Date(comment.created_at)}
+                                                    data-tooltip-place="top"
+                                                    >{format(new Date(comment.created_at))}</p>
                                                 </div>
                                             </div>
 
@@ -155,7 +163,11 @@ const CommentsandLogs = ({ taskId }) => {
                                 <div key={comment.id} className="p-3 text-gray-500 bg-gray-50 rounded-lg shadow-sm mx-auto text-xs">
                                     <strong className="text-gray-800 ">{comment.user_name.charAt(0).toUpperCase() + comment.user_name.slice(1)}</strong>{" "}
                                     <span className="text-gray-600 ">{parse(comment.comment)}</span>{" "}
-                                    <span className="text-xs text-gray-400 ">({format(new Date(comment.created_at))})</span>
+                                    <span className="text-xs text-gray-400 "
+                                    data-tooltip-id="my-tooltip"
+                                    data-tooltip-content={new Date(comment.created_at)}
+                                    data-tooltip-place="top"
+                                    >({format(new Date(comment.created_at))})</span>
                                 </div>
                             ))
                         )}

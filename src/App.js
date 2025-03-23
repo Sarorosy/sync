@@ -19,6 +19,8 @@ import { onMessage } from 'firebase/messaging';
 import toast from "react-hot-toast";
 import SplashScreen from "./components/SplashScreen";
 import Profile from "./pages/user/Profile";
+import ViewTask from "./pages/task/ViewTask";
+import Users from "./pages/users/Users";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -34,7 +36,7 @@ const ProtectedRoute = ({ children }) => {
 function App() {
 
   const [users, setUsers] = useState([]);
-  const [permissionGranted, setPermissionGranted] = useState(false);
+  
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
@@ -47,86 +49,7 @@ function App() {
   }, []);
 
 
-  const requestPermission = async () => {
-    try {
-      // Check if notification permission is already granted
-      const permission = Notification.permission;
-
-      if (permission === 'granted') {
-        console.log('Notification permission already granted.');
-
-        // Register the service worker with the correct scope
-        if ('serviceWorker' in navigator) {
-          // Register the service worker manually with the correct path
-          const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-          console.log('Service Worker registered with scope:', registration.scope);
-
-          // Now, get the token with the custom service worker registration
-          const currentToken = await getToken(messaging, {
-            vapidKey: 'BFEh52B2gdCHFyKNo71vgG3Vg5crEdg2H4b2FLLjiAizybXHlwy73MQTUI0FVA9h1PH3Oy9dtc1wSJ6FVmj7MUE',  // Your VAPID key here
-            serviceWorkerRegistration: registration, // Pass the custom service worker registration
-          });
-
-          if (currentToken) {
-            console.log('FCM Token:', currentToken);
-            const requestData = {
-              //   userId: userObject.id,
-              token: currentToken,
-            };
-
-            // const response = await fetch("https://apacvault.com/webapi/saveFcmToken", {
-            //   method: "POST",
-            //   headers: {
-            //     "Content-Type": "application/json",
-            //   },
-            //   body: JSON.stringify(requestData),
-            // });
-
-            // if (response.ok) {
-            //   const result = await response.json();
-            //   console.log("FCM token successfully saved:", result);
-            // } else {
-            //   console.error("Failed to save FCM token:", response.status, response.statusText);
-            // }
-
-          } else {
-            console.log('No registration token available.');
-          }
-        } else {
-          console.error('Service Workers are not supported in this browser.');
-        }
-      } else if (permission === 'default') {
-        // Request permission if not already granted
-        const permissionRequest = await Notification.requestPermission();
-        if (permissionRequest === 'granted') {
-          console.log('Notification permission granted.');
-          setPermissionGranted(true);
-          requestPermission();  // Re-run the permission request logic after granting
-        } else {
-          console.log('Notification permission denied.');
-        }
-      } else {
-        console.log('Notification permission denied.');
-      }
-
-    } catch (error) {
-      console.error('Error getting notification permission or token:', error);
-    }
-  };
-
-  useEffect(() => {
-
-    requestPermission();
-
-    onMessage(messaging, (payload) => {
-      console.log('Message received. ', payload.notification.body);  // Check this log to see the incoming message
-      if (payload && payload.notification) {
-        // Handle the notification payload data as needed
-        toast(payload.notification.body);
-        //alert(payload.data.google.c.a.c_l)
-      }
-    });
-  }, []);
+ 
 
   useEffect(() => {
     // Fetch users for the select dropdown
@@ -174,8 +97,10 @@ function App() {
             >
               <Route path="/" element={<HomePage />} />
               <Route path="/chat" element={<ChatPage />} />
-              <Route path="/users" element={<UsersPage />} />
+              <Route path="/users" element={<Users />} />
               <Route path="/tasks" element={<Tasks users={users} />} />
+              <Route path="/tasks/:unique_id" element={<Tasks users={users} />} />
+              <Route path="/tasks/:unique_id/:full_screen" element={<Tasks users={users} />} />
               <Route path="/profile" element={<Profile users={users} />} />
             </Route>
           </Routes>

@@ -8,15 +8,17 @@ import ToggleViewButton from "./task/ToggleViewButton";
 import BoardView from "./task/views/BoardView";
 import ViewTask from "./task/ViewTask";
 import { listenForTaskUpdates, listenForTaskDescriptionUpdates } from "./TaskSocket";
+import { useNavigate, useParams } from "react-router-dom";
 
 function Tasks({ users }) {
-
+    const { unique_id, full_screen } = useParams();
     const [searchQuery, setSearchQuery] = useState("");
     const [addTaskOpen, setAddTaskOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const isFullScreen = Boolean(full_screen);
     const [tasks, setTasks] = useState([]);
-
+    const navigate = useNavigate();
 
     useEffect(() => {
         const cleanupTaskUpdates = listenForTaskUpdates(setTasks);
@@ -36,6 +38,15 @@ function Tasks({ users }) {
         localStorage.setItem("view", view);
     }, [view]);
 
+    const handleFullScreenClick = () => {
+        navigate(isFullScreen ? `/tasks/${unique_id}` : `/tasks/${unique_id}/f`);
+    };
+    useEffect(() => {
+        if (unique_id) {
+            setSelectedTask(unique_id);
+            setDetailsOpen(true);
+        }
+    }, [unique_id]);
 
     const fetchTasks = async () => {
         try {
@@ -48,15 +59,16 @@ function Tasks({ users }) {
         }
     };
 
+    
+    
     useEffect(() => {
-
         fetchTasks();
     }, []);
 
     const filteredTasks = tasks.filter(task => task.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const handleViewTask = (task) => {
-        setSelectedTask(task);
+        navigate(`/tasks/${task.unique_id}`);
         setDetailsOpen(true);
     };
 
@@ -124,13 +136,14 @@ function Tasks({ users }) {
                 <AnimatePresence>
                     {detailsOpen && (
                         <motion.div
-                            initial={{ opacity: 0, x: 100 }} // Start off-screen right
-                            animate={{ opacity: 1, x: 0 }}  // Move to the center
-                            exit={{ opacity: 0, x: 100 }}   // Exit to the right smoothly
-                            transition={{ duration: 0.4, ease: "easeInOut" }}
-                        >
-                            <ViewTask selectedTask={selectedTask} onClose={() => setDetailsOpen(false)} users={users} />
-                        </motion.div>
+                        initial={isFullScreen ? { opacity: 0, scale: 0.8 } : { opacity: 0, x: 100 }}
+                        animate={isFullScreen ? { opacity: 1, scale: 1 } : { opacity: 1, x: 0 }}
+                        exit={isFullScreen ? { opacity: 0, scale: 0.8 } : { opacity: 0, x: 100 }}
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                        className={isFullScreen ? "fixed inset-0 bg-white z-50 flex items-center justify-center" : ""}
+                    >
+                        <ViewTask isFullScreen={isFullScreen} handleFullScreenClick={handleFullScreenClick} selectedTask={selectedTask} onClose={() => setDetailsOpen(false)} users={users} />
+                    </motion.div>
                     )}
                 </AnimatePresence>
 
