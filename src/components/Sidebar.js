@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Package, ChevronLeft, ChevronRight, LogOut, Store, BadgeCheck, Map, Bell, Users, Newspaper, Cannabis, MessageCircleQuestion, CheckCircle, CircleCheck, Users2 } from "lucide-react";
+import { Home, Package, ChevronLeft, ChevronRight, LogOut, Store, BadgeCheck, Map, Bell, Users, Newspaper, Cannabis, MessageCircleQuestion, CheckCircle, CircleCheck, Users2, PlusCircle } from "lucide-react";
 import logo from '../assets/logo-black.svg';
 import { useAuth } from "../context/AuthContext";
 import ConfirmationModal from "./ConfirmationModal";
 import { AnimatePresence } from "framer-motion";
 import NotificationDiv from "./NotificationDiv";
+import teamSvg from '../assets/team.svg';
 
 const Sidebar = ({isExpanded}) => {
   
@@ -72,6 +73,11 @@ const Sidebar = ({isExpanded}) => {
           <Link to="/users" className={`${isExpanded ? "pl-10" : "justify-center"} flex items-center gap-3 text-md p-2 rounded-lg primary-text-hover transition-all duration-200 `}>
             <Users2 size={18} /> {isExpanded && "Users"}
           </Link>
+        </li>
+        <li className={`${isExpanded ? "pl-10 justify-between" : "justify-center"} flex  flex items-center gap-3 text-md p-2 rounded-lg primary-text-hover transition-all duration-200 `}>
+          
+            <img src={teamSvg} className="w-5 h-5" />{isExpanded && <Link to="/teams/create" > <PlusCircle size={18} /> </Link>}
+          
         </li>
         
       </ul>

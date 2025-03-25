@@ -2,7 +2,7 @@ import React from "react";
 
 const TaskDetailsLoader = () => {
     return (
-        <div className="p-4 bg-white shadow-md rounded-lg w-full max-w-2xl animate-pulse">
+        <div className="p-4 bg-white shadow-md rounded-lg w-5xl w-full animate-pulse">
             {/* Title */}
             <div className="h-6 bg-gray-300 rounded w-1/3 mb-3"></div>
 

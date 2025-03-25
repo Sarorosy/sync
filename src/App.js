@@ -21,6 +21,7 @@ import SplashScreen from "./components/SplashScreen";
 import Profile from "./pages/user/Profile";
 import ViewTask from "./pages/task/ViewTask";
 import Users from "./pages/users/Users";
+import CreateTeam from "./pages/teams/CreateTeam";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -101,6 +102,8 @@ function App() {
               <Route path="/tasks" element={<Tasks users={users} />} />
               <Route path="/tasks/:unique_id" element={<Tasks users={users} />} />
               <Route path="/tasks/:unique_id/:full_screen" element={<Tasks users={users} />} />
+
+              <Route path="/teams/create" element={<CreateTeam users={users} />} />
               <Route path="/profile" element={<Profile users={users} />} />
             </Route>
           </Routes>

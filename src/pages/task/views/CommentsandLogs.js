@@ -61,15 +61,48 @@ const CommentsandLogs = ({ taskId }) => {
 
                     if (mentionName) {
                         return (
-                            <span className="inline-flex justify-start items-center text-xs bg-gray-300 font-semibold rounded-md">
-                                <span className="mentionname text-black">{mentionName.charAt(0)}</span>
-                                <span className="pl-1 mentionemail text-black">{mentionName}</span>
-                            </span>
+                            <MentionTooltip mentionName={mentionName} mentionEmail={mentionEmail} />
                         );
                     }
                 }
             },
         });
+    };
+
+    const MentionTooltip = ({ mentionName, mentionEmail }) => {
+        const [showTooltip, setShowTooltip] = useState(false);
+    
+        return (
+            <span
+                className="inline-flex items-center text-xs bg-gray-300 font-semibold rounded-md relative cursor-pointer"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+            >
+                <span className="mentionname text-black">{mentionName.charAt(0)}</span>
+                <span className="pl-1 mentionemail text-black">{mentionName}</span>
+    
+                {showTooltip && (
+                    <div className="absolute mt-2 w-64 overflow-x-hidden bg-white shadow-md rounded-sm z-10" style={{top:"-85px", left:"0"}}>
+                        <div className="flex">
+                        {/* Left section (Profile Initial & Role) */}
+                        <div className="w-24 bg-[#f1bd6c] flex flex-col items-center justify-center p-4">
+                            <div className="text-4xl font-bold text-gray-800">
+                                {mentionName.charAt(0)}
+                            </div>
+                            <span className="text-xs text-gray-700 mt-2"></span>
+                        </div>
+
+                        {/* Right section (User Details) */}
+                        <div className="flex-1 p-4">
+                            <p className="text-sm font-bold text-gray-900">{mentionName}</p>
+                            <p className="text-xs text-gray-500">{mentionEmail}</p>
+
+                        </div>
+                    </div>
+                    </div>
+                )}
+            </span>
+        );
     };
 
     const logsOnly = comments.filter((comment) => comment.islog === 1);

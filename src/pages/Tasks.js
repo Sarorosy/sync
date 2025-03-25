@@ -31,7 +31,7 @@ function Tasks({ users }) {
     }, []);
 
     const [view, setView] = useState(() => {
-        return localStorage.getItem("view") || "grid";
+        return localStorage.getItem("view") || "list";
     });
 
     useEffect(() => {

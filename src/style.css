@@ -117,9 +117,16 @@
   }
 
   .ql-toolbar{
-    background: rgb(204, 209, 255);
+    background: rgb(255, 255, 255);
     border:0px solid transparent;
     border:none !important;
+    color: lightgray;
+}
+.ql-snow .ql-stroke {
+  stroke: #a0a0a0 !important;
+}
+.ql-snow.ql-toolbar .ql-picker-label:hover{
+  color: black !important;
 }
   .ql-editor{
     min-height: 150px;

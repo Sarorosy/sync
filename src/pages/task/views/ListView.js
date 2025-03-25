@@ -95,19 +95,37 @@ const ListView = ({ tasks, handleViewTask, detailsOpen }) => {
                   </td>
                   <td className="h-10 overflow-y-hidden px-6 py-1 text-gray-600">{formatDate(task.due_date)} {task.due_time}</td>
                   <td className="px-6 py-1 flex items-center">
-                    {task.assigned_user_profile ? (
-                      <img
-                        src={"http://localhost:5000" + task.assigned_user_profile}
-                        alt={task.assigned_user_name}
-                        className="w-8 h-8 rounded-full border border-gray-300"
-                      />
+                    {(task.assigned_to && task.assigned_to != null && task.assigned_to != '')? (
+                      task.assigned_user_profile ? (
+                        <img
+                          src={"http://localhost:5000" + task.assigned_user_profile}
+                          alt={task.assigned_user_name}
+                          className="w-8 h-8 rounded-full border border-gray-300"
+                        />
+                      ) : (
+                        <div
+                          className={`w-8 h-8 flex items-center justify-center rounded-full ${getRandomColor(
+                            task.assigned_user_id
+                          )} text-gray-800`}
+                        >
+                          {task.assigned_user_name.charAt(0).toUpperCase()}
+                        </div>
+                      )
                     ) : (
-                      <div className={`w-8 h-8 flex items-center justify-center rounded-full ${getRandomColor(task.assigned_user_id)} text-gray-800 `}>
-                        {task.assigned_user_name.charAt(0).toUpperCase()}
+                      <div className="flex items-center ">
+                        <div
+                          className={`w-8 h-8 flex items-center justify-center rounded-full bg-red-300 text-gray-800`}
+                        >
+                          N
+                        </div>
+                       <span className="ml-2 text-gray-700">No Assignee</span>
                       </div>
                     )}
-                    <span className="ml-2 text-gray-700">{task.assigned_user_name}</span>
+                    {task.assigned_to && (
+                      <span className="ml-2 text-gray-700">{task.assigned_user_name}</span>
+                    )}
                   </td>
+
                   <td className="px-6 py-1 text-gray-700">{task.followers.length}</td>
                 </>)}
               </tr>
