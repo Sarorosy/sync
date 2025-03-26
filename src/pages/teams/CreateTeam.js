@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Select from "react-select";
 import { useAuth } from "../../context/AuthContext";
+import toast from "react-hot-toast";
 
 export default function CreateTeam({ users }) {
     const [teamName, setTeamName] = useState("");
@@ -16,52 +17,41 @@ export default function CreateTeam({ users }) {
 
     const handleCreateTeam = async () => {
         if (!teamName || !description || !selectedMembers.length) {
-            alert("Please provide all required fields.");
+            toast.error("Please provide all required fields.");
             return;
         }
     
-        // Ensure `selectedMembers` is an array of user IDs (not objects)
-        const members = selectedMembers.map(member => 
-            typeof member === "object" && member.id ? member.id : member
-        );
-    
-        const teamData = {
-            team_name: teamName, // Ensure it matches the backend column name
-            description,
-            members, // Array of user IDs
-        };
-    
-        console.log("Creating team:", teamData);
-    
         try {
-            const response = await fetch("http://localhost:5000/api/teams/create", {
+            const response = await fetch("http://localhost:5000/api/teams/create/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`, // Uncomment if authentication is required
+                    Authorization: `Bearer ${user.token}`, // Assuming token is stored in user context
                 },
-                body: JSON.stringify(teamData),
+                body: JSON.stringify({
+                    team_name: teamName,
+                    description,
+                    members: selectedMembers.map((member) => member.value),
+                    createdBy: user.id, // Sending logged-in user ID
+                }),
             });
-    
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
     
             const data = await response.json();
     
-            console.log("Team created successfully:", data);
-            alert("Team created successfully!");
-            
-            // Optionally clear input fields after success
-            setTeamName("");
-            setDescription("");
-            setSelectedMembers([]);
-    
+            if (response.ok) {
+                toast.success("Team created successfully!");
+                setTeamName("");
+                setDescription("");
+                setSelectedMembers([]);
+            } else {
+                toast.error(data.message || "Failed to create team.");
+            }
         } catch (error) {
-            console.error("Network error:", error);
-            alert("Failed to create team. Please try again.");
+            console.error("Error creating team:", error);
+            toast.error("Something went wrong. Please try again.");
         }
     };
+    
     
 
 
@@ -117,6 +107,7 @@ export default function CreateTeam({ users }) {
                     className="mt-1 "
                     placeholder="Select Members"
                     onChange={setSelectedMembers}
+                    value={selectedMembers}
                 />
             </div>
 

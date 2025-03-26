@@ -139,6 +139,9 @@
     border:0px;
     border: none !important;
   }
+  div#_popup {
+    width: 310px !important;
+  }
 @font-face {
     font-family: 'iOSFont';
     src: url('./assets/ios.ttf') format('truetype');

@@ -132,7 +132,7 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
                         tags: JSON.parse(data.task.tags),
                         created_by: data.task.created_by,
                     });
-                    setSelectedTags(JSON.parse(data.task.tags));
+                    setSelectedTags(data.task.tags ? JSON.parse(data.task.tags) : []);
                 } else {
                     console.error("Failed to fetch task");
                 }
