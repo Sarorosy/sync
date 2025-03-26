@@ -142,9 +142,6 @@ const Sidebar = ({ isExpanded }) => {
       </ul>
 
 
-
-
-
       <ConfirmationModal
         isOpen={isModalOpen}
         message="Are you sure you want to log out?"
