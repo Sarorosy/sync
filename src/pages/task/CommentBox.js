@@ -5,8 +5,12 @@ import { DOMParser as PDOMParser, Schema, Fragment } from "prosemirror-model";
 import { schema as baseSchema } from "prosemirror-schema-basic";
 import { keymap } from "prosemirror-keymap";
 import { exampleSetup, buildMenuItems } from "prosemirror-example-setup";
+import { toggleMark, setBlockType, wrapIn } from "prosemirror-commands";
+import { undo, redo } from "prosemirror-history";
 import { MenuItem } from "prosemirror-menu";
+import { MenuView } from "prosemirror-menu"; 
 import { DOMSerializer } from "prosemirror-model";
+import { Plugin } from "prosemirror-state"
 import {
     columnResizing,
     tableEditing,
@@ -34,11 +38,14 @@ const CommentBox = ({ users, taskId }) => {
     const editorRef = useRef(null);
     const editorViewRef = useRef(null); // Track the editor instance
     const [loading, setLoading] = useState(false);
+    
     const user = useAuth();
+
 
     useEffect(() => {
         if (!editorRef.current || editorViewRef.current) return; // Prevent duplicate instances
 
+        
         const imageSettings = {
             ...defaultSettings,
             hasTitle: false,
@@ -75,8 +82,14 @@ const CommentBox = ({ users, taskId }) => {
                     .append({ tag: tagNode }),
                 { ...imageSettings }
             ),
-            marks: baseSchema.spec.marks,
+            marks: baseSchema.spec.marks.append({
+                underline: {
+                    parseDOM: [{ tag: "u" }, { style: "text-decoration=underline" }],
+                    toDOM() { return ["u", 0]; }
+                }
+            }),
         });
+
 
         let mentionPlugin = getMentionsPlugin({
             mentionTrigger: "@",
@@ -84,44 +97,43 @@ const CommentBox = ({ users, taskId }) => {
             getSuggestions: (type, text, done) => {
                 setTimeout(() => {
                     if (type === "mention") {
-                        const filteredUsers = text 
+                        const filteredUsers = text
                             ? (Array.isArray(users) ? users.filter(u => u.name.toLowerCase().includes(text.toLowerCase())) : [])
                             : (Array.isArray(users) ? users : []);
 
                         const mappedUsers = filteredUsers.map(user => ({
                             name: user.name,
-                            id:user.id,
+                            id: user.id,
                             email: user.email,
-                            profile_pic:  user.profile_pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`
+                            profile_pic: user.profile_pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`
                         }));
 
                         done(mappedUsers);
 
                     } else if (type === "tag") {
-                        done([{ tag: "number" }, { tag: "month_name" }]);
+                        return;
                     }
                 }, 0);
             },
-            onEnter: (item, setEditorState) => {
+            onEnter: (item, setEditorState, view) => {
+                console.log("coming inside");
                 console.log("coming inside")
                 setEditorState((prevState) => {
                     let { selection } = prevState;
                     let mentionText = `@${item.name} `;
-            
-                    // Insert mention text at cursor position
+
                     let tr = prevState.tr.insertText(mentionText, selection.anchor);
-            
-                    // ✅ Move cursor forward after inserted mention
+
                     let newSelection = TextSelection.create(
-                        tr.doc, 
+                        tr.doc,
                         selection.anchor + mentionText.length
                     );
                     tr = tr.setSelection(newSelection);
-            
+
                     console.log("Updated Transaction:", tr);
                     return prevState.apply(tr);
                 });
-            
+
                 // ✅ Ensure ProseMirror editor refocuses and inserts space
                 setTimeout(() => {
                     const editorNode = document.querySelector(".ProseMirror");
@@ -131,32 +143,108 @@ const CommentBox = ({ users, taskId }) => {
                     }
                 }, 50);
             },
-            
-            
-            
+
+
+
+        });
+        class MenuView {
+            constructor(items, editorView) {
+              this.items = items
+              this.editorView = editorView
+          
+              this.dom = document.createElement("div")
+              this.dom.className = "Prose-menubar"
+              items.forEach(({dom}) => this.dom.appendChild(dom))
+              this.update()
+          
+              this.dom.addEventListener("mousedown", e => {
+                e.preventDefault()
+                editorView.focus()
+                items.forEach(({command, dom}) => {
+                  if (dom.contains(e.target))
+                    command(editorView.state, editorView.dispatch, editorView)
+                })
+              })
+            }
+          
+            update() {
+              this.items.forEach(({command, dom}) => {
+                let active = command(this.editorView.state, null, this.editorView)
+                dom.style.display = active ? "" : "none"
+              })
+            }
+          
+            destroy() { this.dom.remove() }
+          }
+          
+        // Helper function to create menu icons
+        function icon(text, name) {
+            let span = document.createElement("span")
+            span.className = "menuicon " + name
+            span.title = name
+            span.textContent = text
+            return span
+        }
+
+        function menuPlugin(items) {
+            return new Plugin({
+                view(editorView) {
+                    let menuView = new MenuView(items, editorView)
+                    editorView.dom.parentNode.insertBefore(menuView.dom, editorView.dom)
+                    return menuView
+                }
+            })
+        }
+
+        let menu = menuPlugin([
+            { command: toggleMark(schema.marks.strong), dom: icon("B", "strong") }, // Bold
+            { command: toggleMark(schema.marks.em), dom: icon("i", "italic") }, // Italic
+            { command: toggleMark(schema.marks.underline), dom: icon("U", "underline") }, // Underline
+            { command: toggleMark(schema.marks.code), dom: icon("</>", "code") }, // Code
+        ]);
+        
+        const appendSpacePlugin = new Plugin({
+            appendTransaction(transactions, oldState, newState) {
+                let tr = newState.tr;
+                let appended = false;
+        
+                transactions.forEach((transaction) => {
+                    if (!transaction.docChanged) return;
+        
+                    // Find newly inserted mention nodes
+                    transaction.mapping.maps.forEach((stepMap) => {
+                        stepMap.forEach((oldStart, oldEnd, newStart, newEnd) => {
+                            let node = newState.doc.nodeAt(newStart);
+                            if (node && node.type.name === "mention") {
+                                tr.insertText("    ", newEnd); // Append two spaces after mention
+                                appended = true;
+                            }
+                        });
+                    });
+                });
+        
+                return appended ? tr : null; // Return transaction only if changes were made
+            }
         });
         
-
-        let menu = buildMenuItems(schema).fullMenu;
-        menu.push([new MenuItem({ label: "Add table", run: insertTable })]);
-
         let doc = PDOMParser.fromSchema(schema).parse(
             new DOMParser().parseFromString(`<p></p>`, "text/xml").documentElement
         );
-
         let state = EditorState.create({
             doc,
             plugins: [
+                menu,
+                appendSpacePlugin,
                 columnResizing(),
                 tableEditing(),
                 mentionPlugin,
                 imagePlugin({ ...imageSettings }),
                 keymap({ Tab: goToNextCell(1), "Shift-Tab": goToNextCell(-1) }),
-            ].concat(exampleSetup({ schema, menuBar: false, menuContent: menu })),
+            ].concat(exampleSetup({ schema, menuBar: true, menuContent: menu })),
         });
 
         let fix = fixTables(state);
-        if (fix) state = state.apply(fix.setMeta("addToHistory", false));
+        if (fix) state = state.apply(fix.setMeta("addToHistory", true));
 
         editorViewRef.current = new EditorView(editorRef.current, { state }); // Store the editor instance
 
@@ -166,7 +254,7 @@ const CommentBox = ({ users, taskId }) => {
                 mentionDropdown.remove();
             }
         };
-    
+
         document.addEventListener("click", handleClickOutside);
 
         return () => {
@@ -174,15 +262,15 @@ const CommentBox = ({ users, taskId }) => {
                 editorViewRef.current.destroy();
                 editorViewRef.current = null;
             }
-    
+
             // **Remove mention suggestion dropdown**
             const mentionDropdown = document.querySelector(".mention-suggestions");
             if (mentionDropdown) mentionDropdown.remove();
         };
     }, []);
 
-    
-    
+
+
     const insertTable = (state, dispatch) => {
         const offset = state.tr.selection.anchor + 1;
         const cell = state.schema.nodes.table_cell.createAndFill();
@@ -250,7 +338,7 @@ const CommentBox = ({ users, taskId }) => {
                 ),
                 plugins: editorViewRef.current.state.plugins,
             });
-        
+
             editorViewRef.current.updateState(newState);
             setLoading(false);
         } catch (error) {
@@ -275,7 +363,7 @@ const CommentBox = ({ users, taskId }) => {
     return (
         <div className="sticky bottom-0 p-4 bg-white shadow-md z-50 border bordert-t-1">
             <div ref={editorRef} className="border border-gray-300 bg-white p-2 rounded-md shadow-sm"></div>
-            
+
             <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-4 p-2 bg-white rounded-lg ">
                     {/* Emoji Picker */}

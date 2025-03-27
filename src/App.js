@@ -112,7 +112,7 @@ function App() {
           </Routes>
         </Router>
       <Toaster />
-      <Tooltip id="my-tooltip" />
+      <Tooltip id="my-tooltip" className="topmost" />
     </AuthProvider>
   );
 }

@@ -1,316 +1,321 @@
-import React, { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import axios from "axios";
-import toast from "react-hot-toast";
-import Select from "react-select";
-import { Calendar, CircleX, Clock, UserCircle, UserRound } from "lucide-react";
-import DatePicker from "react-datepicker";
-import EditorJS from "@editorjs/editorjs";
-import Header from "@editorjs/header";
-import List from "@editorjs/list";
-import Paragraph from "@editorjs/paragraph";
-import Embed from "@editorjs/embed";
-import ImageTool from "@editorjs/image";
-import Quote from "@editorjs/quote";
-import Delimiter from "@editorjs/delimiter";
-import Checklist from "@editorjs/checklist";
-import "react-datepicker/dist/react-datepicker.css";
-import flatpickr from "flatpickr";
-import "flatpickr/dist/flatpickr.min.css";
+import React, { useEffect, useRef, useState, Suspense, lazy } from "react";
+import { EditorView } from "prosemirror-view";
+import { EditorState, TextSelection } from "prosemirror-state";
+import { DOMParser as PDOMParser, Schema, Fragment } from "prosemirror-model";
+import { schema as baseSchema } from "prosemirror-schema-basic";
+import { keymap } from "prosemirror-keymap";
+import { exampleSetup, buildMenuItems } from "prosemirror-example-setup";
+import { MenuItem } from "prosemirror-menu";
+import { DOMSerializer } from "prosemirror-model";
+import {
+    columnResizing,
+    tableEditing,
+    tableNodes,
+    fixTables,
+    goToNextCell,
+} from "prosemirror-tables";
+import { tagNode, mentionNode, getMentionsPlugin } from "prosemirror-mentions";
+import { defaultSettings, imagePlugin, updateImageNode } from "prosemirror-image-plugin";
 import { useAuth } from "../../context/AuthContext";
+import { Paperclip, Smile } from "lucide-react";
+import toast from "react-hot-toast";
+import { io } from "socket.io-client";
+const socket = io("http://localhost:5000");
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 
-function AddTask({ onTaskAdded, onClose, users }) {
-    const {user} = useAuth();
-    const [task, setTask] = useState({
-        title: "",
-        description: "",
-        assigned_to: "",
-        followers: "",
-        status: "pending",
-        priority: "medium",
-        due_date: "",
-        due_time: "",
-        created_by: user?.id , // Replace with logged-in user ID
-    });
-    const [search, setSearch] = useState("");
-    const [showDropdown, setShowDropdown] = useState(false);
 
 
-    
-    const filteredUsers = users.filter(user =>
-        user.label.toLowerCase().includes(search.toLowerCase())
-    );
+const CommentBox = ({ users, taskId }) => {
 
-    
-
-    const editorInstance = useRef(null);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [commentText, setCommentText] = useState("");
+    const [selectedUser, setSelectedUser] = useState(null);
+    const editorRef = useRef(null);
+    const editorViewRef = useRef(null); // Track the editor instance
+    const [loading, setLoading] = useState(false);
+    const user = useAuth();
 
     useEffect(() => {
-        if (!editorInstance.current) {
-            editorInstance.current = new EditorJS({
-                holder: "editorjs",
-                placeholder: "Write task description...",
-                tools: {
-                    paragraph: Paragraph,
-                    header: {
-                        class: Header,
-                        inlineToolbar: true,
-                    },
-                    list: {
-                        class: List,
-                        inlineToolbar: true,
-                    },
-                    checklist: {
-                        class: Checklist,
-                        inlineToolbar: true,
-                    },
-                    quote: {
-                        class: Quote,
-                        inlineToolbar: true,
-                    },
-                    delimiter: Delimiter,
-                    embed: Embed,
-                    image: {
-                        class: ImageTool,
-                        config: {
-                            endpoints: {
-                                byFile: "http://localhost:5000/api/tasks/upload-image", // Correct backend API for image uploads
-                                byUrl: "http://localhost:5000/api/tasks/fetch-image", // Optional: Change this to a valid image-fetching API if needed
-                            },
-                            field: "image", // Ensure this matches the key in the FormData backend expects
-                            types: "image/*", // Restrict file types to images
-                        },
-                    },
-                },
-                onChange: async () => {
-                    const content = await editorInstance.current.save();
-                    setTask((prev) => ({ ...prev, description: content }));
-                },
-            });
-        }
+        if (!editorRef.current || editorViewRef.current) return; // Prevent duplicate instances
+
+        const imageSettings = {
+            ...defaultSettings,
+            hasTitle: false,
+            isBlock: false,
+            uploadFile: async (file) => {
+                console.log("Uploading image:", file);
+
+                const formData = new FormData();
+                formData.append("image", file);
+
+                try {
+                    const response = await fetch("http://localhost:5000/api/comments/upload-image", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Failed to upload image");
+                    }
+
+                    const data = await response.json();
+                    return data.file.url; // Assuming API returns { "imageUrl": "https://yourserver.com/uploads/image.png" }
+                } catch (error) {
+                    console.error("Image upload failed:", error);
+                    return null; // Return null to prevent adding a broken image
+                }
+            }
+        };
+        let schema = new Schema({
+            nodes: updateImageNode(
+                baseSchema.spec.nodes
+                    .append(tableNodes({ tableGroup: "block", cellContent: "block+" }))
+                    .append({ mention: mentionNode })
+                    .append({ tag: tagNode }),
+                { ...imageSettings }
+            ),
+            marks: baseSchema.spec.marks,
+        });
+
+        let mentionPlugin = getMentionsPlugin({
+            mentionTrigger: "@",
+            hashtagTrigger: "#",
+            getSuggestions: (type, text, done) => {
+                setTimeout(() => {
+                    if (type === "mention") {
+                        const filteredUsers = text 
+                            ? (Array.isArray(users) ? users.filter(u => u.name.toLowerCase().includes(text.toLowerCase())) : [])
+                            : (Array.isArray(users) ? users : []);
+
+                        const mappedUsers = filteredUsers.map(user => ({
+                            name: user.name,
+                            id:user.id,
+                            email: user.email,
+                            profile_pic:  user.profile_pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`
+                        }));
+
+                        done(mappedUsers);
+
+                    } else if (type === "tag") {
+                        done([{ tag: "number" }, { tag: "month_name" }]);
+                    }
+                }, 0);
+            },
+            onEnter: (item, setEditorState) => {
+                console.log("coming inside")
+                setEditorState((prevState) => {
+                    let { selection } = prevState;
+                    let mentionText = `@${item.name} `;
+            
+                    // Insert mention text at cursor position
+                    let tr = prevState.tr.insertText(mentionText, selection.anchor);
+            
+                    // ✅ Move cursor forward after inserted mention
+                    let newSelection = TextSelection.create(
+                        tr.doc, 
+                        selection.anchor + mentionText.length
+                    );
+                    tr = tr.setSelection(newSelection);
+            
+                    console.log("Updated Transaction:", tr);
+                    return prevState.apply(tr);
+                });
+            
+                // ✅ Ensure ProseMirror editor refocuses and inserts space
+                setTimeout(() => {
+                    const editorNode = document.querySelector(".ProseMirror");
+                    if (editorNode) {
+                        editorNode.focus();
+                        document.execCommand("insertText", false, " "); // Ensure space after mention
+                    }
+                }, 50);
+            },
+            
+            
+            
+        });
+        
+
+        let menu = buildMenuItems(schema).fullMenu;
+        menu.push([new MenuItem({ label: "Add table", run: insertTable })]);
+
+        let doc = PDOMParser.fromSchema(schema).parse(
+            new DOMParser().parseFromString(`<p></p>`, "text/xml").documentElement
+        );
+
+        let state = EditorState.create({
+            doc,
+            plugins: [
+                columnResizing(),
+                tableEditing(),
+                mentionPlugin,
+                imagePlugin({ ...imageSettings }),
+                keymap({ Tab: goToNextCell(1), "Shift-Tab": goToNextCell(-1) }),
+            ].concat(exampleSetup({ schema, menuBar: false, menuContent: menu })),
+        });
+
+        let fix = fixTables(state);
+        if (fix) state = state.apply(fix.setMeta("addToHistory", false));
+
+        editorViewRef.current = new EditorView(editorRef.current, { state }); // Store the editor instance
+
+        const handleClickOutside = (event) => {
+            const mentionDropdown = document.querySelector(".suggestion-item-container");
+            if (mentionDropdown && !editorRef.current.contains(event.target)) {
+                mentionDropdown.remove();
+            }
+        };
+    
+        document.addEventListener("click", handleClickOutside);
 
         return () => {
-            if (editorInstance.current && typeof editorInstance.current.destroy === "function") {
-                editorInstance.current.destroy();
-                editorInstance.current = null;
+            if (editorViewRef.current) {
+                editorViewRef.current.destroy();
+                editorViewRef.current = null;
             }
+    
+            // **Remove mention suggestion dropdown**
+            const mentionDropdown = document.querySelector(".mention-suggestions");
+            if (mentionDropdown) mentionDropdown.remove();
         };
     }, []);
 
-    const dateRef = useRef(null);
-    const timeRef = useRef(null);
+    
+    
+    const insertTable = (state, dispatch) => {
+        const offset = state.tr.selection.anchor + 1;
+        const cell = state.schema.nodes.table_cell.createAndFill();
+        const node = state.schema.nodes.table.create(
+            null,
+            Fragment.fromArray([
+                state.schema.nodes.table_row.create(null, Fragment.fromArray([cell, cell, cell])),
+                state.schema.nodes.table_row.create(null, Fragment.fromArray([cell, cell, cell]))
+            ])
+        );
 
-    useEffect(() => {
-        flatpickr(dateRef.current, {
-            dateFormat: "Y-m-d",
-            defaultDate: task.due_date || null,
-            onChange: ([date]) => handleChange({ target: { name: "due_date", value: date.toISOString().split("T")[0] } })
-        });
-
-        flatpickr(timeRef.current, {
-            enableTime: true,
-            noCalendar: true,
-            dateFormat: "H:i",
-            time_24hr: true,
-            defaultDate: task.due_time || null,
-            onChange: ([time]) => {
-                const formattedTime = time.toTimeString().split(" ")[0];
-                handleChange({ target: { name: "due_time", value: formattedTime } });
-            }
-        });
-    }, [task]);
-
-    const handleChange = (e) => {
-        setTask({ ...task, [e.target.name]: e.target.value });
-    };
-    const getRandomColor = (id) => {
-        const colors = [
-            "bg-red-300", "bg-blue-300", "bg-green-300",
-            "bg-yellow-300", "bg-purple-300", "bg-pink-300",
-            "bg-indigo-300", "bg-teal-300", "bg-orange-300"
-        ];
-        return colors[id % colors.length]; // Assigns a color based on user ID
-    };
-
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            console.log(task)
-            console.log(user)
-            const response = await axios.post("http://localhost:5000/api/tasks/create/", task);
-            if (response.data.status) {
-                toast.success("Task added successfully!");
-                onTaskAdded();
-                onClose();
-                setTask({
-                    title: "",
-                    description: null,
-                    assigned_to: null,
-                    status: "pending",
-                    priority: "medium",
-                    due_date: "",
-                    due_time: "",
-                    created_by: 1,
-                });
-                editorInstance.current.clear();
-            }
-        } catch (error) {
-            //  toast.error("Failed to add task.");
-            console.log(error)
+        if (dispatch) {
+            dispatch(
+                state.tr.replaceSelectionWith(node).scrollIntoView().setSelection(TextSelection.near(state.tr.doc.resolve(offset)))
+            );
         }
+        return true;
     };
+    const handleSubmit = async () => {
+        if (!editorViewRef.current) return;
+
+        setLoading(true);
+
+        // Extract content
+        const doc = editorViewRef.current.state.doc;
+        const serializer = DOMSerializer.fromSchema(editorViewRef.current.state.schema);
+        const fragment = document.createElement("div");
+        fragment.appendChild(serializer.serializeFragment(doc.content));
+        const content = fragment.innerHTML.trim();
+
+        // Check if the comment is empty
+        if (!content || content === "<p></p>") {
+            toast.error("Comment cannot be empty!");
+            setLoading(false);
+            return;
+        }
+
+        // API call
+        try {
+            // const response = await fetch("http://localhost:5000/api/comments/create", {
+            //     method: "POST",
+            //     headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.user.token}` },
+
+            //     body: JSON.stringify({ task_id: taskId, comment: content }),
+            // });
+            // if (response.ok) {
+
+            //     const newState = EditorState.create({
+            //         doc: PDOMParser.fromSchema(editorViewRef.current.state.schema).parse(
+            //             new DOMParser().parseFromString(`<p></p>`, "text/xml").documentElement
+            //         ),
+            //         plugins: editorViewRef.current.state.plugins,
+            //     });
+
+            //     editorViewRef.current.updateState(newState);
+            // } else {
+            //     console.error("Failed to submit comment.");
+            // }
+
+            socket.emit("comment_added", { taskId, comment: content, user_id: user.user.id });
+
+            const newState = EditorState.create({
+                doc: PDOMParser.fromSchema(editorViewRef.current.state.schema).parse(
+                    new DOMParser().parseFromString(`<p></p>`, "text/xml").documentElement
+                ),
+                plugins: editorViewRef.current.state.plugins,
+            });
+        
+            editorViewRef.current.updateState(newState);
+            setLoading(false);
+        } catch (error) {
+            console.error("Error submitting comment:", error);
+        }
+
+        setLoading(false);
+    };
+
+    const handleEmojiClick = (emojiData) => {
+        if (!editorViewRef.current) return;
+
+        const { state, dispatch } = editorViewRef.current;
+        const { selection } = state;
+        const tr = state.tr.insertText(emojiData.emoji, selection.from, selection.to);
+
+        dispatch(tr);
+        setShowEmojiPicker(false);
+    };
+
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed top-0 right-0 h-full max-w-3xl bg-gray-50 shadow-md z-50 overflow-y-auto p-6 w-2xl"
-        >
+        <div className="sticky bottom-0 p-4 bg-white shadow-md z-50 border bordert-t-1">
+            <div ref={editorRef} className="border border-gray-300 bg-white p-2 rounded-md shadow-sm"></div>
+            
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold mb-4">Add New Task</h2>
-                <CircleX className="cursor-pointer" onClick={onClose} />
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <input
-                        type="text"
-                        name="title"
-                        value={task.title}
-                        onChange={handleChange}
-                        required
-                        className="w-full rounded px-3 py-2 mt-1 border-none outline-none focus:ring-0 focus:border-transparent"
-                        placeholder="Write a task name"
-                    />
-                </div>
-
-
-
-                <div className="flex items-center w-full gap-2">
-
-                    <div className="relative w-2/5">
-                        {/* Input wrapper with icon */}
-                        <div className="relative flex items-center">
-                            <UserRound size={24} className="absolute left-3 text-gray-500 border border-gray-600 p-1 rounded-full border-dashed" />
-
-                            {/* Input field */}
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                onFocus={() => setShowDropdown(true)}
-                                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                                placeholder="Assignee"
-                                className="w-full pl-10 pr-8 py-2 border rounded-md focus:outline-none focus:ring-transparent"
-                            />
-
-                            {/* Clear button */}
-                            {task.assigned_to && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setTask({ ...task, assigned_to: null });
-                                        setSearch("");
-                                    }}
-                                    className="absolute right-3 text-gray-500 hover:text-red-500"
-                                >
-                                    <CircleX size={20} />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Dropdown list */}
-                        {showDropdown && filteredUsers.length > 0 && (
-                            <div className="absolute left-0 w-full bg-white border rounded-md shadow-lg max-h-40 overflow-auto mt-1 z-10">
-                                {filteredUsers.map((user) => (
-                                    <div
-                                        key={user.value}
-                                        onClick={() => {
-                                            console.log("Assigned to ID:", user.value); // Debugging log
-                                            setTask({ ...task, assigned_to: user.value });
-                                            setSearch(user.label);
-                                            setShowDropdown(false);
-                                        }}
-                                        onMouseDown={() => { // Use onMouseDown to prevent onBlur issues
-                                            console.log("Assigned to ID:", user.value); // Debugging log
-                                            setTask({ ...task, assigned_to: user.value }); // Set ID
-                                            setSearch(user.label);
-                                            setShowDropdown(false);
-                                        }}
-                                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center space-x-3"
-                                    >
-                                        {/* Avatar or first letter */}
-                                        {user.avatar ? (
-                                            <img src={user.avatar} alt={user.label} className="w-8 h-8 rounded-full" />
-                                        ) : (
-                                            <div className={`w-8 h-8 flex items-center justify-center ${getRandomColor(user.value)} text-gray-700 rounded-full`}>
-                                                {user.label.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-
-                                        {/* User Name */}
-                                        <span>{user.label}</span>
-                                    </div>
-                                ))}
+                <div className="flex items-center space-x-4 p-2 bg-white rounded-lg ">
+                    {/* Emoji Picker */}
+                    <div className="relative">
+                        <Smile
+                            onClick={() => setShowEmojiPicker((prev) => !prev)}
+                            className="cursor-pointer text-gray-500 hover:text-gray-700 transition-all duration-200"
+                            size={20}
+                        />
+                        {showEmojiPicker && (
+                            <div className="absolute bottom-12 left-0 bg-white shadow-lg rounded-md p-2">
+                                <Suspense fallback={<div className="p-2">Loading...</div>}>
+                                    <EmojiPicker
+                                        onEmojiClick={handleEmojiClick}
+                                        lazyLoadEmojis={true} // Improves performance
+                                        disableSearchBar={true} // Remove search bar to speed up
+                                        suggestedEmojisMode="none" // Hide frequent emojis
+                                        defaultSkinTone={2} // Reduce variations
+                                    />
+                                </Suspense>
                             </div>
                         )}
                     </div>
 
-
-
-                    <div className="w-1/5">
-                        <select
-                            name="priority"
-                            value={task.priority}
-                            onChange={handleChange}
-                            className="w-full border-none rounded px-3 py-2 mt-1 focus:ring-transparent focus:border-none"
-
-                        >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                        </select>
-                    </div>
-                    {/* Due Date Picker */}
-                    <div className="flex items-center w-2/5">
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
-                            <input
-                                ref={dateRef}
-                                className="w-full pl-10 border outline-none focus:ring-0 rounded px-3 py-2 mt-1"
-                                placeholder="Due Date"
-                            />
-                        </div>
-
-                        {/* Time Input */}
-                        <div className="relative">
-                            <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
-                            <input
-                                ref={timeRef}
-                                className="w-full pl-10 border outline-none focus:ring-0 rounded px-3 py-2 mt-1"
-                                placeholder="Due Time"
-                            />
-                        </div></div>
+                    {/* File Attachment */}
+                    <Paperclip
+                        className="cursor-pointer text-gray-500 hover:text-gray-700 transition-all duration-200"
+                        size={20}
+                    />
                 </div>
-
-                <div className="bg-white">
-                    <div id="editorjs" className="border rounded px-3 py-2 mt-1"></div>
-                </div>
-
                 <button
-                    type="submit"
-                    className="w-48 bg-black text-white py-2 rounded"
+                    onClick={handleSubmit}
+                    className="mt-3 px-3 py-1 bg-blue-500 text-white rounded-md"
+                    disabled={loading}
                 >
-                    Create
+                    {loading ? "Submitting..." : "Submit"}
                 </button>
-            </form>
-        </motion.div>
+            </div>
+        </div>
     );
-}
+};
 
-export default AddTask;
+export default CommentBox;

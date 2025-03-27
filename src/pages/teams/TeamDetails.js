@@ -59,9 +59,16 @@ const TeamDetails = () => {
                     <div className="flex flex-wrap gap-2 mt-3">
                         {members.map((member, index) => (
                             member.profile_pic ? (
-                                <img src={"http://localhost:5000" + member.profile_pic} className="rounded-full w-10 h-10 border" />
+                                <img src={"http://localhost:5000" + member.profile_pic} className="rounded-full w-10 h-10 border"
+                                data-tooltip-id="my-tooltip"
+                                data-tooltip-content={member.name ?? ''}
+                                data-tooltip-place="top"
+                                />
                             ) : (<div
                                 key={index}
+                                data-tooltip-id="my-tooltip"
+                                data-tooltip-content={member.name ?? ''}
+                                data-tooltip-place="top"
                                 className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-bold
                                     ${index % 2 === 0 ? "bg-yellow-300 text-gray-800" : "bg-purple-300 text-white"}`}
                             >

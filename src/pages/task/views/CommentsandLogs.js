@@ -108,7 +108,7 @@ const CommentsandLogs = ({ taskId }) => {
     const logsOnly = comments.filter((comment) => comment.islog === 1);
 
     return (
-        <div className="max-w-3xl my-3 mx-auto bg-white shadow-lg rounded-lg p-4">
+        <div className="max-w-3xl my-3 mx-auto bg-[#f9f8f8] shadow-lg rounded-lg p-4">
             {/* Tabs */}
             <div className="flex border-b border-black mb-2">
                 <button
@@ -116,6 +116,12 @@ const CommentsandLogs = ({ taskId }) => {
                     onClick={() => setActiveTab("comments")}
                 >
                     Comments
+                </button>
+                <button
+                    className={`flex-1 py-1 text-base font-medium ${activeTab === "logs" ? "border-b-2 border-black" : "text-black"}`}
+                    onClick={() => setActiveTab("attachments")}
+                >
+                    Attachments
                 </button>
                 <button
                     className={`flex-1 py-1 text-base font-medium ${activeTab === "logs" ? "border-b-2 border-black" : "text-black"}`}

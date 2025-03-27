@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Select from "react-select";
+
 import { Calendar, CircleX, Clock, UserCircle, UserRound } from "lucide-react";
 import "react-datepicker/dist/react-datepicker.css";
 import flatpickr from "flatpickr";
@@ -16,7 +17,7 @@ function AddTask({ onTaskAdded, onClose, users }) {
         title: "",
         description: "",
         assigned_to: "",
-        followers: "",
+        followers: [],
         status: "pending",
         priority: "medium",
         due_date: "",
@@ -61,6 +62,16 @@ function AddTask({ onTaskAdded, onClose, users }) {
             });
         }
     }, []);
+
+
+    const handleFollowersChange = (selectedOptions) => {
+        setTask((prev) => ({
+            ...prev,
+            followers: selectedOptions.map(option => option.value), // Store only IDs
+        }));
+    };
+
+    const filteredFollowers = users.filter(user => user.value !== task.assigned_to);
 
     const filteredUsers = users.filter(user =>
         user.label.toLowerCase().includes(search.toLowerCase())
@@ -275,6 +286,28 @@ function AddTask({ onTaskAdded, onClose, users }) {
                     <div id="editor" style={{ border: "none", background: "white" }}>
 
                     </div>
+                </div>
+                <div className="w-2/5">
+                    <Select
+                        isMulti
+                        options={filteredFollowers}
+                        getOptionLabel={(e) => (
+                            <div className="flex items-center space-x-2">
+                                {e.avatar ? (
+                                    <img src={e.avatar} alt={e.label} className="w-6 h-6 rounded-full" />
+                                ) : (
+                                    <div className={`w-6 h-6 flex items-center justify-center ${getRandomColor(e.value)} text-gray-700 rounded-full`}>
+                                        {e.label.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                                <span>{e.label}</span>
+                            </div>
+                        )}
+                        value={users.filter(u => (task.followers || []).includes(u.value))}
+                        onChange={handleFollowersChange}
+                        className="basic-multi-select"
+                        placeholder="Select Followers"
+                    />
                 </div>
                 <button
                     type="submit"

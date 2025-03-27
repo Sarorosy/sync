@@ -18,6 +18,7 @@ import { useParams } from "react-router-dom";
 import TaskDetailsLoader from "./TaskDetailsLoader";
 import 'react-quill/dist/quill.snow.css';
 import ReactQuill from 'react-quill';
+import Collaborators from "./Collaborators";
 
 const socket = io("http://localhost:5000");
 
@@ -31,6 +32,7 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
         assigned_to: "",
         assigned_user_name: "",
         followers: "",
+        follower_names : "",
         status: "",
         priority: "medium",
         due_date: "",
@@ -124,7 +126,8 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
                         description: data.task.description,
                         assigned_user_name: data.task.assigned_user_name,
                         assigned_to: data.task.assigned_to,
-                        followers: data.task.followers,
+                        followers: data.task.followers ?? "",
+                        follower_names : data.task.follower_names ?? null,
                         status: data.task.status,
                         priority: data.task.priority,
                         due_date: data.task.due_date,
@@ -226,7 +229,15 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
         if (e.target.name == "title") {
             debouncedEditTaskTitle(e.target.value);
         }
+        if (e.target.name == "due_date") {
+            debouncedUpdateTaskDueDate(e.target.value);
+        }
     };
+
+    const debouncedUpdateTaskDueDate = debounce((dueDate) => {
+        socket.emit("update_task_duedate", { taskId: task.id, dueDate: dueDate, user_id: user.user.id });
+    }, 500);
+
     const debouncedUpdateTaskTitle = debounce((updatedTitle) => {
         socket.emit("update_task_title", { taskId: task.id, title: updatedTitle, user_id: user.user.id });
     }, 500);
@@ -307,7 +318,7 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
 
 
     useEffect(() => {
-        if (!task || Object.keys(task).length === 0) return; // Ensure task is defined and not empty
+        if (!task || Object.keys(task).length == 0) return; // Ensure task is defined and not empty
 
         if (dateRef.current) {
             flatpickr(dateRef.current, {
@@ -362,7 +373,16 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
             if (data.taskId === task.id) {
                 setTask((prev) => ({ ...prev, title: data.title }));
             }
-        }, 2000),
+        }, 1000),
+        [task.id]
+    );
+
+    const updateTaskDueDateState = useCallback(
+        debounce((data) => {
+            if (data.taskId === task.id) {
+                setTask((prev) => ({ ...prev, due_date: data.due_date }));
+            }
+        }, 1000),
         [task.id]
     );
 
@@ -385,11 +405,13 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
                 tags
             }));
         });
+        socket.on("task_duedate_updated", updateTaskDueDateState);
 
         return () => {
             socket.off("task_updated", updateTaskTitleState);
             socket.off("task_description_updated", updateTaskDescriptionState);
             socket.off("task_tags_updated");
+            socket.off("task_duedate_updated");
         };
     }, [updateTaskTitleState, updateTaskDescriptionState]);
 
@@ -477,7 +499,7 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
                 </div>
             </div>
             {loading ? (<TaskDetailsLoader />) : (<>
-                <form className="space-y-2  px-6 pt-3">
+                <form className="bg-white space-y-2  px-6 pt-3">
                     <div>
                         <input
                             type="text"
@@ -564,64 +586,67 @@ function ViewTask({ selectedTask, onClose, users, isFullScreen, handleFullScreen
                             }
                         </div>
                     )}
-                
-                {showTagModal && (
-                    <div ref={modalRef} className="bg-white rounded-lg p-4 w-full shadow-lg">
-                        <div className="flex justify-between items-center mb-3">
-                            <h2 className="text-sm font-medium text-gray-700">Select Tags</h2>
-                            <X size={20} className="cursor-pointer text-gray-500 hover:text-gray-700" onClick={() => setShowTagModal(false)} />
-                        </div>
 
-                        {selectedTags.length > 0 && (
-                            <div className="bg-gray-100 rounded-md p-2 my-2 flex items-center space-x-2 justify-end">
-                                {
-                                    selectedTags.map(tag => (
-                                        <div key={tag} className="bg-red-500 text-white text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1">
-                                            {tag}
-                                            <X size={12} className="cursor-pointer" onClick={() => removeTag(tag)} />
-                                        </div>
-                                    ))}
+                    {showTagModal && (
+                        <div ref={modalRef} className="bg-white rounded-lg p-4 w-full shadow-lg">
+                            <div className="flex justify-between items-center mb-3">
+                                <h2 className="text-sm font-medium text-gray-700">Select Tags</h2>
+                                <X size={20} className="cursor-pointer text-gray-500 hover:text-gray-700" onClick={() => setShowTagModal(false)} />
                             </div>
-                        )}
+
+                            {selectedTags.length > 0 && (
+                                <div className="bg-gray-100 rounded-md p-2 my-2 flex items-center space-x-2 justify-end">
+                                    {
+                                        selectedTags.map(tag => (
+                                            <div key={tag} className="bg-red-500 text-white text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                {tag}
+                                                <X size={12} className="cursor-pointer" onClick={() => removeTag(tag)} />
+                                            </div>
+                                        ))}
+                                </div>
+                            )}
 
 
-                        <div className="mt-3 grid grid-cols-6 gap-2">
-                            {tagsList.map(tag => (
-                                <label
-                                    key={tag.name}
-                                    className={`px-3 py-1 text-gray-700 rounded-md text-[11px] cursor-pointer ${selectedTags.includes(tag.name) ? 'bg-black text-white' : 'border  bg-gray-100 hover:bg-gray-200'}`}
-                                    onClick={() => addTag(tag.name)}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        className="hidden"
-                                        checked={selectedTags.includes(tag.name)}
-                                        readOnly
-                                    />
-                                    {tag.name}
-                                </label>
-                            ))}
+                            <div className="mt-3 grid grid-cols-6 gap-2">
+                                {tagsList.map(tag => (
+                                    <label
+                                        key={tag.name}
+                                        className={`px-3 py-1 text-gray-700 rounded-md text-[11px] cursor-pointer ${selectedTags.includes(tag.name) ? 'bg-black text-white' : 'border  bg-gray-100 hover:bg-gray-200'}`}
+                                        onClick={() => addTag(tag.name)}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            className="hidden"
+                                            checked={selectedTags.includes(tag.name)}
+                                            readOnly
+                                        />
+                                        {tag.name}
+                                    </label>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                <ReactQuill
-                    value={task.description}
-                    onChange={handleDescriptionChange}
-                    className="mt-1 border rounded-md"
-                    theme="snow"
-                    placeholder="Add your comments here"
-                    modules={modules}
-                    onBlur={() => { debouncedUpdateTaskDescription(task.description) }}
-                />
+                    <ReactQuill
+                        value={task.description}
+                        onChange={handleDescriptionChange}
+                        className="mt-1 border rounded-md"
+                        theme="snow"
+                        placeholder="Add your comments here"
+                        modules={modules}
+                        onBlur={() => { debouncedUpdateTaskDescription(task.description) }}
+                    />
 
-            </form>
-        </>)
-}
+                </form>
+            </>)
+            }
+            <hr />
             <CommentsandLogs taskId={task.id} />
             <div className="sticky w-full bottom-0 z-50">
-                <CommentBox users={users} taskId={task.id} />
+                <CommentBox users={users} taskId={task.id} task={task}/>
+                <Collaborators taskId={task.id} followerNames={task.follower_names} followers={task.followers} users={users} />
             </div>
+            
         </div >
     );
 }

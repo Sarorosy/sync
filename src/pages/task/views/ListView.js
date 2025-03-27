@@ -35,13 +35,28 @@ const getRandomColor = (id) => {
 };
 
 const formatDate = (isoString) => {
+  if (!isoString) return "";
+
   const date = new Date(isoString);
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.floor((date - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === -1) return { text: "Yesterday", color: "text-red-600" };
+  if (diffDays === 0) return { text: "Today", color: "text-green-700 font-semibold" };
+  if (diffDays === 1) return { text: "Tomorrow", color: "text-green-700" };
+
+  if (diffDays > 1 && diffDays <= 6) {
+    return { text: date.toLocaleDateString("en-US", { weekday: "long" }), color: "text-green-700" };
+  }
+
+  return {
+    text: date.toLocaleDateString("en-US", { day: "numeric", month: "short" }),
+    color: diffDays < 0 ? "text-red-600" : "text-green-700",
+  };
 };
+
 
 const ListView = ({ tasks, handleViewTask, detailsOpen }) => {
 
@@ -67,7 +82,7 @@ const ListView = ({ tasks, handleViewTask, detailsOpen }) => {
               <th className="px-6 py-3">Priority</th>
               <th className="px-6 py-3">Due Date</th>
               <th className="px-6 py-3">Assigned User</th>
-              <th className="px-6 py-3">Followers</th>
+              <th className="px-6 py-3">Collaborators</th>
             </>)}
           </tr>
         </thead>
@@ -93,18 +108,24 @@ const ListView = ({ tasks, handleViewTask, detailsOpen }) => {
                       {task.priority}
                     </span>
                   </td>
-                  <td className="h-10 overflow-y-hidden px-6 py-1 text-gray-600">{formatDate(task.due_date)} {task.due_time}</td>
+                  <td className={`h-10 overflow-y-hidden px-6 py-1 ${formatDate(task.due_date).color}`}
+                    data-tooltip-id="my-tooltip"
+                    data-tooltip-content={new Date(task.due_date).toLocaleDateString("en-GB")}
+                    data-tooltip-place="top"
+                  >
+                    {formatDate(task.due_date).text} {(task.due_time && task.due_time !="00:00:00") ?? ""}
+                  </td>
                   <td className="px-6 py-1 flex items-center">
-                    {(task.assigned_to && task.assigned_to != null && task.assigned_to != '')? (
+                    {(task.assigned_to && task.assigned_to != null && task.assigned_to != '') ? (
                       task.assigned_user_profile ? (
                         <img
                           src={"http://localhost:5000" + task.assigned_user_profile}
                           alt={task.assigned_user_name}
-                          className="w-8 h-8 rounded-full border border-gray-300"
+                          className="w-7 h-7 rounded-full border border-gray-300"
                         />
                       ) : (
                         <div
-                          className={`w-8 h-8 flex items-center justify-center rounded-full ${getRandomColor(
+                          className={`w-7 h-7 flex items-center justify-center rounded-full ${getRandomColor(
                             task.assigned_user_id
                           )} text-gray-800`}
                         >
@@ -114,11 +135,11 @@ const ListView = ({ tasks, handleViewTask, detailsOpen }) => {
                     ) : (
                       <div className="flex items-center ">
                         <div
-                          className={`w-8 h-8 flex items-center justify-center rounded-full bg-red-300 text-gray-800`}
+                          className={`w-7 h-7 flex items-center justify-center rounded-full bg-red-300 text-gray-800`}
                         >
                           N
                         </div>
-                       <span className="ml-2 text-gray-700">No Assignee</span>
+                        <span className="ml-2 text-gray-700">No Assignee</span>
                       </div>
                     )}
                     {task.assigned_to && (
@@ -126,7 +147,31 @@ const ListView = ({ tasks, handleViewTask, detailsOpen }) => {
                     )}
                   </td>
 
-                  <td className="px-6 py-1 text-gray-700">{task.followers.length}</td>
+                  <td className="px-6 py-1 text-gray-700">
+                    <div className="flex -space-x-2">
+                      {task && task.followers.slice(0, 4).map((follower, index) => (
+                        follower.profile_pic ? (
+                          <img src={"http://localhost:5000" + follower.profile_pic}
+                            className="w-8 h-8 rounded-full"
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-content={follower.name}
+                            data-tooltip-place="top"
+                          />
+                        ) : (
+                          <div
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-content={follower.name}
+                            data-tooltip-place="top"
+                            key={index}
+                            className="w-8 h-8 bg-[#f1bd6c] rounded-full flex items-center justify-center text-sm font-light border-2 border-white shadow"
+                          >
+                            {follower.name.charAt(0).toUpperCase()}
+                          </div>
+                        )
+
+                      ))}
+                    </div>
+                  </td>
                 </>)}
               </tr>
             </>
